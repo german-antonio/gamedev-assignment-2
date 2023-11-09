@@ -1,0 +1,10 @@
+{
+  "BasedOnStyle": "LLVM",
+  "IndentWidth": 2,
+  "TabWidth": 2,
+  "UseTab": "Never",
+  "AccessModifierOffset": -2,
+  "ColumnLimit": 150,
+  "PointerAlignment": "Left",
+  "BreakBeforeBraces": "Stroustrup"
+}
