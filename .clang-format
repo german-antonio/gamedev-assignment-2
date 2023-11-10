@@ -4,7 +4,7 @@
   "TabWidth": 2,
   "UseTab": "Never",
   "AccessModifierOffset": -2,
-  "ColumnLimit": 150,
+  "ColumnLimit": 120,
   "PointerAlignment": "Left",
-  "BreakBeforeBraces": "Stroustrup"
+  "BreakBeforeBraces": "Allman"
 }
