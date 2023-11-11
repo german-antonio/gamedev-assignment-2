@@ -180,55 +180,100 @@ void Game::sUserInput()
   {
     // this event triggers when the window is closed
     if (event.type == sf::Event::Closed)
-    {
       m_running = false;
-    }
 
-    // this event is triggered when a key is pressed
+    // Keyboard input handling
     if (event.type == sf::Event::KeyPressed)
-    {
-      switch (event.key.code)
-      {
-      case sf::Keyboard::Up:
-        m_player->cInput->up = true;
-        break;
+      resolveKeyPressedAction(event.key.code);
+    if (event.type == sf::Event::KeyReleased)
+      resolveKeyReleasedAction(event.key.code);
 
-      case sf::Keyboard::Down:
-        m_player->cInput->down = true;
-        break;
-
-      case sf::Keyboard::Left:
-        m_player->cInput->left = true;
-        break;
-
-      case sf::Keyboard::Right:
-        m_player->cInput->right = true;
-        break;
-
-      case sf::Keyboard::R:
-        m_player->cInput->gameOver = false;
-        // TODO: implement proper reset behaviour
-        break;
-
-        // case sf::Keyboard::S:
-        //   stop(true);
-        //   break;
-
-      case sf::Keyboard::X:
-        m_player->cInput->gameOver = true;
-        break;
-
-      case sf::Keyboard::D:
-        m_player->cInput->debug = !m_player->cInput->debug;
-        break;
-
-      case sf::Keyboard::Escape:
-        m_window.close();
-        break;
-
-      default:
-        break;
-      }
-    }
+    // Mouse input handling
+    if (event.type == sf::Event::MouseButtonPressed)
+      resolveMouseButtonPressedAction(event.mouseButton);
   }
+}
+
+void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
+{
+  switch (key)
+  {
+  case sf::Keyboard::Up:
+    m_player->cInput->up = true;
+    break;
+
+  case sf::Keyboard::Down:
+    m_player->cInput->down = true;
+    break;
+
+  case sf::Keyboard::Left:
+    m_player->cInput->left = true;
+    break;
+
+  case sf::Keyboard::Right:
+    m_player->cInput->right = true;
+    break;
+
+  case sf::Keyboard::R:
+    m_gameOver = false;
+    // TODO: implement proper reset behaviour
+    break;
+
+    // case sf::Keyboard::S:
+    //   stop(true);
+    //   break;
+
+  case sf::Keyboard::X:
+    m_gameOver = true;
+    break;
+
+  case sf::Keyboard::D:
+    m_debug = !m_debug;
+    break;
+
+  case sf::Keyboard::Escape:
+    m_window.close();
+    break;
+
+  default:
+    break;
+  }
+}
+
+void Game::resolveKeyReleasedAction(sf::Keyboard::Key key)
+{
+  std::cout << "Key released with code = " << key << std::endl;
+
+  switch (key)
+  {
+  case sf::Keyboard::Up:
+    m_player->cInput->up = false;
+    break;
+
+  case sf::Keyboard::Down:
+    m_player->cInput->down = false;
+    break;
+
+  case sf::Keyboard::Left:
+    m_player->cInput->left = false;
+    break;
+
+  case sf::Keyboard::Right:
+    m_player->cInput->right = false;
+    break;
+
+  default:
+    break;
+  }
+}
+
+void resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
+{
+  // TODO: Implement actual logic from mouse pressed actions
+  if (mouse.button == sf::Mouse::Left)
+    std::cout << "Mouse L Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
+  // call spawnBullet here
+  if (mouse.button == sf::Mouse::Right)
+    // call spawnSpecialWeapon here
+    std::cout << "Mouse R Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
 }
