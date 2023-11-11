@@ -116,7 +116,7 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
 void Game::sMovement()
 {
   // TODO: implement all entity movement in this function
-  //       you should read the m_player->cInput ciomponent to determine if the player is moving
+  //       you should read the m_player->cInput component to determine if the player is moving
 
   // sample movement speed update
   m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
