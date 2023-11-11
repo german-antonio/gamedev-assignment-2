@@ -25,8 +25,8 @@ void EntityManager::update()
 
 std::shared_ptr<Entity> EntityManager::addEntity(const std::string& tag)
 {
-  auto entity = std::shared_ptr<Entity>(
-      new Entity(m_totalEntities++, tag)); // this syntax is for private constructors (instead of make_shared)
+  // this syntax is for private constructors (instead of make_shared)
+  auto entity = std::shared_ptr<Entity>(new Entity(m_totalEntities++, tag));
 
   m_entitiesToAdd.push_back(entity); // push the shared pointer of newly instanced entity e to the toAdd vector
   return entity; // we are preventing iteration invalidation (i.e. modifying iterators during their iteration)
@@ -36,4 +36,12 @@ std::shared_ptr<Entity> EntityManager::addEntity(const std::string& tag)
 void EntityManager::removeDeadEntities(EntityVec& vec)
 {
   vec.erase(std::remove_if(vec.begin(), vec.end(), [](const auto& e) { return !e.m_active; }), vec.end());
+}
+
+const EntityVec& EntityManager::getEntities() { return m_entities; }
+
+const EntityVec& EntityManager::getEntities(const std::string& tag)
+{
+  // TODO: this is incorrect, return the correct vector from the map
+  return m_entities;
 }
