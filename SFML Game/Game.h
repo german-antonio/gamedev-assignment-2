@@ -36,8 +36,10 @@ class Game
   int m_score = 0;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
-  bool m_paused = false; // wether we update game logic
-  bool m_running = true; // wether the game is running
+  bool m_paused = false;   // wether we update game logic
+  bool m_running = true;   // wether the game is running
+  bool m_gameOver = false; // wether the game is over
+  bool m_debug = false;    // wether debug mode is active
 
   std::shared_ptr<Entity> m_player;
 
@@ -57,6 +59,10 @@ class Game
   void spawnSmallenemies(std::shared_ptr<Entity> entity);
   void spawnBullet(std::shared_ptr<Entity> entity, const Vec2& mousePos);
   void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
+
+  void resolveKeyPressedAction(sf::Keyboard::Key key);
+  void resolveKeyReleasedAction(sf::Keyboard::Key key);
+  void resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent);
 
 public:
   Game(const std::string& config); // constructor, takes in game config
