@@ -76,16 +76,24 @@ void Game::spawnEnemy()
 
   auto entity = m_entities.addEntity("enemy");
 
-  // Give this entity a transform so it spawns at (200,200) with velocity (1,1) and angle 0
-  // spawn at the center
-  float ex = rand() % m_window.getSize().x; // TODO: this must be fixed to prevent spawning colliding with edges
-  float ey = rand() % m_window.getSize().y;
+  // spawn at random point
+  int radius = 16;
+  float thickness = 4.0f;
+  int offset = radius + thickness;
+  int minX = offset;
+  int minY = offset;
+  int maxX = m_window.getSize().x - offset;
+  int maxY = m_window.getSize().y - offset;
+  float ex = (rand() % (maxX - minX)) + minX;
+  float ey = (rand() % (maxY - minY)) + minY;
+
+  std::cout << "Enemy will be spawned at: (" << ex << "," << ey << ")" << std::endl;
 
   entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(1.0f, 1.0f), 0.0f);
 
-  // The entity's shape will have a radius 32, 8 sides, dark grey fill, and red outline of thickness 4
-  // entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
-  entity->cShape = std::make_shared<CShape>(16.0f, 3, sf::Color(0, 0, 255), sf::Color(255, 255, 255), 4.0f);
+  // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
+  // TODO: entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
+  entity->cShape = std::make_shared<CShape>(radius, 3, sf::Color(0, 0, 255), sf::Color(255, 255, 255), thickness);
 
   // record when the most recent enemy was spawned
   m_lastEnemySpawnTime = m_currentFrame;
@@ -106,6 +114,13 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   // TODO: Implement the spawning of a bullet which travels toward target
   //       - bullet speed is given as a scalar speed
   //       - you must set the velocity by using formula in notes
+  auto bullet = m_entities.addEntity("bullet");
+
+  // TODO: give the bullet all of its properties
+
+  // Let's pretend bullets will spawn right at the mouse click position
+  bullet->cTransform = std::make_shared<CTransform>(target, Vec2(0, 0), 0);
+  bullet->cShape = std::make_shared<CShape>(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -117,6 +132,20 @@ void Game::sMovement()
 {
   // TODO: implement all entity movement in this function
   //       you should read the m_player->cInput component to determine if the player is moving
+
+  m_player->cTransform->velocity = {0, 0}; // TODO: make it deaccelerate like greenberry did
+
+  if (m_player->cInput->up)
+    m_player->cTransform->velocity.y = -5;
+
+  if (m_player->cInput->down)
+    m_player->cTransform->velocity.y = 5;
+
+  if (m_player->cInput->left)
+    m_player->cTransform->velocity.x = -5;
+
+  if (m_player->cInput->right)
+    m_player->cTransform->velocity.x = 5;
 
   // sample movement speed update
   m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
@@ -159,14 +188,25 @@ void Game::sRender()
   m_window.clear();
 
   // set the position of the shape based on the entity's transform->pos
-  m_player->cShape->circle.setPosition(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
+  // m_player->cShape->circle.setPosition(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
 
   // set the rotation of the shape based on the entity's transform->angle
   m_player->cTransform->angle += 1.0f;
-  m_player->cShape->circle.setRotation(m_player->cTransform->angle);
+  // m_player->cShape->circle.setRotation(m_player->cTransform->angle);
 
   // draw the entity's sf::CircleShape
-  m_window.draw(m_player->cShape->circle);
+  // m_window.draw(m_player->cShape->circle);
+
+  for (auto& e : m_entities.getEntities())
+  {
+    std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
+              << e->cShape->circle.getPosition().y << ")" << std::endl;
+
+    e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+    e->cTransform->angle += 1.0f;
+    e->cShape->circle.setRotation(e->cTransform->angle);
+    m_window.draw(e->cShape->circle);
+  }
 
   m_window.display();
 };
@@ -273,8 +313,12 @@ void Game::resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
 {
   // TODO: Implement actual logic from mouse pressed actions
   if (mouse.button == sf::Mouse::Left)
+  {
     std::cout << "Mouse L Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
-  // call spawnBullet here
+    // call spawnBullet here
+    spawnBullet(m_player, Vec2(mouse.x, mouse.y));
+  }
+
   if (mouse.button == sf::Mouse::Right)
     // call spawnSpecialWeapon here
     std::cout << "Mouse R Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
