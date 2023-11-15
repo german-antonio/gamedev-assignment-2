@@ -1,5 +1,7 @@
 #include "EntityManager.h"
 
+#include <iostream>
+
 // Empty constructor
 EntityManager::EntityManager() {}
 
@@ -21,6 +23,8 @@ void EntityManager::update()
   }
 
   m_entitiesToAdd.clear();
+
+  std::cout << "Entities count: " << m_totalEntities << std::endl;
 };
 
 std::shared_ptr<Entity> EntityManager::addEntity(const std::string& tag)
@@ -44,4 +48,9 @@ const EntityVec& EntityManager::getEntities(const std::string& tag)
 {
   // TODO: this is incorrect, return the correct vector from the map
   return m_entities;
+}
+
+const int EntityManager::getTotalEntities()
+{
+  return m_totalEntities;
 }
