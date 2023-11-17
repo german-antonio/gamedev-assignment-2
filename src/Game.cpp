@@ -5,8 +5,6 @@
 #include <iostream>
 #include <math.h>
 
-Utils utils;
-
 Game::Game(const std::string& config) { init(config); }
 
 void Game::init(const std::string& path)
@@ -88,10 +86,10 @@ void Game::spawnEnemy()
   int offset = radius + thickness;
   int maxX = m_window.getSize().x - offset;
   int maxY = m_window.getSize().y - offset;
-  float rndX = utils.randBetween(offset, maxX);
-  float rndY = utils.randBetween(offset, maxY);
-  float speed = utils.randBetween(2, 6);
-  int points = utils.randBetween(3, 8);
+  float rndX = Utils::randBetween(offset, maxX);
+  float rndY = Utils::randBetween(offset, maxY);
+  float speed = Utils::randBetween(2, 6);
+  int points = Utils::randBetween(3, 8);
 
   std::cout << "Enemy will be spawned at: (" << rndX << "," << rndY << ")" << std::endl;
 
