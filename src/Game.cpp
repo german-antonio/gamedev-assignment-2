@@ -1,7 +1,11 @@
 #include "Game.h"
+#include "Utils.h"
 
 #include <fstream>
 #include <iostream>
+#include <math.h>
+
+Utils utils;
 
 Game::Game(const std::string& config) { init(config); }
 
@@ -30,9 +34,11 @@ void Game::run()
     m_entities.update();
 
     sEnemySpawner();
+    sLifespan();
     sMovement();
     sCollision();
     sUserInput();
+    sUpdatePlayerVelocity();
     sRender();
 
     // increment the current frame
@@ -55,7 +61,7 @@ void Game::spawnPlayer()
   // spawn at the center
   float mx = m_window.getSize().x / 2.0f;
   float my = m_window.getSize().y / 2.0f;
-  entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(1.0f, 1.0f), 0.0f);
+  entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
 
   // The entity's shape will have a radius 32, 8 sides, dark grey fill, and red outline of thickness 4
   // entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
@@ -80,20 +86,28 @@ void Game::spawnEnemy()
   int radius = 16;
   float thickness = 4.0f;
   int offset = radius + thickness;
-  int minX = offset;
-  int minY = offset;
   int maxX = m_window.getSize().x - offset;
   int maxY = m_window.getSize().y - offset;
-  float ex = (rand() % (maxX - minX)) + minX;
-  float ey = (rand() % (maxY - minY)) + minY;
+  float rndX = utils.randBetween(offset, maxX);
+  float rndY = utils.randBetween(offset, maxY);
+  float speed = utils.randBetween(2, 6);
+  int points = utils.randBetween(3, 8);
 
-  std::cout << "Enemy will be spawned at: (" << ex << "," << ey << ")" << std::endl;
+  std::cout << "Enemy will be spawned at: (" << rndX << "," << rndY << ")" << std::endl;
 
-  entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(1.0f, 1.0f), 0.0f);
+  // set position
+  Vec2 position(rndX, rndY);
+  // generate random angle
+  float angle = (rand() % 361);
+  // calculate velocity vector
+  Vec2 velocity((speed * cos(angle)), (speed * sin(angle)));
+
+  // Set transform component
+  entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
   // TODO: entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
-  entity->cShape = std::make_shared<CShape>(radius, 3, sf::Color(0, 0, 255), sf::Color(255, 255, 255), thickness);
+  entity->cShape = std::make_shared<CShape>(radius, points, sf::Color(0, 0, 255), sf::Color(255, 255, 255), thickness);
 
   // record when the most recent enemy was spawned
   m_lastEnemySpawnTime = m_currentFrame;
@@ -116,11 +130,24 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   //       - you must set the velocity by using formula in notes
   auto bullet = m_entities.addEntity("bullet");
 
-  // TODO: give the bullet all of its properties
+  // TODO: give the bullet all of its properties (read from config file)
+  float speed = 10;
 
-  // Let's pretend bullets will spawn right at the mouse click position
-  bullet->cTransform = std::make_shared<CTransform>(target, Vec2(0, 0), 0);
+  // so we have two vectors: playerPos and targetPos
+  Vec2 playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
+  Vec2 targetPos(target.x, target.y);
+
+  // we need to get the difference (distance) between both vectors
+  Vec2 diff = targetPos - playerPos;
+  // now we can use archtangent to get the angle
+  float angle = atan2f(diff.y, diff.x);
+  // calculate velocity vector
+  Vec2 velocity((speed * cos(angle)), (speed * sin(angle))); // TODO: somewhow actually understand this
+
+  // Set transform component
+  bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
   bullet->cShape = std::make_shared<CShape>(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
+  bullet->cLifespan = std::make_shared<CLifespan>(50);
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -133,23 +160,16 @@ void Game::sMovement()
   // TODO: implement all entity movement in this function
   //       you should read the m_player->cInput component to determine if the player is moving
 
-  m_player->cTransform->velocity = {0, 0}; // TODO: make it deaccelerate like greenberry did
-
-  if (m_player->cInput->up)
-    m_player->cTransform->velocity.y = -5;
-
-  if (m_player->cInput->down)
-    m_player->cTransform->velocity.y = 5;
-
-  if (m_player->cInput->left)
-    m_player->cTransform->velocity.x = -5;
-
-  if (m_player->cInput->right)
-    m_player->cTransform->velocity.x = 5;
-
-  // sample movement speed update
-  m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
-  m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+  // UPDATE TO THE ABOVE:
+  // Personal note: we might not really do that, we are determining stuff based on cInput on a
+  // separate system function Game::sUpdatePlayerVelocity()
+  //
+  // We only move all the stuff from here, nothing else
+  for (auto& e : m_entities.getEntities())
+  {
+    e->cTransform->pos.x += e->cTransform->velocity.x;
+    e->cTransform->pos.y += e->cTransform->velocity.y;
+  }
 }
 
 void Game::sLifespan()
@@ -157,12 +177,32 @@ void Game::sLifespan()
   // TODO: implement all lifespan functionality
 
   // for all entities
-  //   if entity has no lifespan component, skip it
-  //   if entity has > 0 remaining lifespan, subtract 1
-  //   if it has lifespan and is alive
-  //     scale its alpha channel properly
-  //   if it has lifespan and its time is up
-  //     destroy the entity
+  for (auto& e : m_entities.getEntities())
+  {
+    //   if entity has no lifespan component, skip it
+    if (!e->cLifespan)
+      continue;
+
+    std::cout << "Entity " << e->tag() << ": " << e->id() << ", lifespan left " << e->cLifespan->remaining << std::endl;
+    //   if entity has > 0 remaining lifespan, subtract 1
+    if (e->cLifespan->remaining > 0)
+    {
+      std::cout << "Entity " << e->id() << " gets lifespan reduced by 1" << std::endl;
+      e->cLifespan->remaining -= 1;
+    }
+    //   if it has lifespan and is alive
+    // if (e->cLifespan && e->isActive())
+    //     scale its alpha channel properly
+    // e->cShape->circle.setFillColor()
+
+    // if it has lifespan and its time is up
+    // destroy the entity
+    else
+    {
+      std::cout << "Entity " << e->id() << " is being destroyed." << std::endl;
+      e->destroy();
+    }
+  }
 }
 
 void Game::sCollision()
@@ -173,12 +213,26 @@ void Game::sCollision()
 
 void Game::sEnemySpawner()
 {
-  // TODO: code which implements enemy spawning should go here
-
-  //       use (m_currentFrame - m_lastEnemySpawnTime) to determine
-  //       how long it has been since the last enemy spawned
-  if ((m_currentFrame - m_lastEnemySpawnTime) >= 100)
+  int spawnRate = 100; // TODO: Read from config file
+  if ((m_currentFrame - m_lastEnemySpawnTime) >= spawnRate)
     spawnEnemy();
+}
+
+void Game::sUpdatePlayerVelocity()
+{
+  m_player->cTransform->velocity = {0, 0}; // TODO: make it deaccelerate like greenberry did
+
+  if (m_player->cInput->up)
+    m_player->cTransform->velocity.y = -3;
+
+  if (m_player->cInput->down)
+    m_player->cTransform->velocity.y = 3;
+
+  if (m_player->cInput->left)
+    m_player->cTransform->velocity.x = -3;
+
+  if (m_player->cInput->right)
+    m_player->cTransform->velocity.x = 3;
 }
 
 void Game::sRender()
@@ -199,8 +253,14 @@ void Game::sRender()
 
   for (auto& e : m_entities.getEntities())
   {
-    std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
-              << e->cShape->circle.getPosition().y << ")" << std::endl;
+    if (!e->isActive())
+    {
+      std::cout << "Skipping dead " << e->tag() << " entity (" << e->id() << ")" << std::endl;
+      continue;
+    }
+
+    // std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
+    //           << e->cShape->circle.getPosition().y << ")" << std::endl;
 
     e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
     e->cTransform->angle += 1.0f;
@@ -241,18 +301,22 @@ void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
   switch (key)
   {
   case sf::Keyboard::Up:
+  case sf::Keyboard::W:
     m_player->cInput->up = true;
     break;
 
   case sf::Keyboard::Down:
+  case sf::Keyboard::S:
     m_player->cInput->down = true;
     break;
 
   case sf::Keyboard::Left:
+  case sf::Keyboard::A:
     m_player->cInput->left = true;
     break;
 
   case sf::Keyboard::Right:
+  case sf::Keyboard::D:
     m_player->cInput->right = true;
     break;
 
@@ -269,7 +333,7 @@ void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
     m_gameOver = true;
     break;
 
-  case sf::Keyboard::D:
+  case sf::Keyboard::F1:
     m_debug = !m_debug;
     break;
 
@@ -289,18 +353,22 @@ void Game::resolveKeyReleasedAction(sf::Keyboard::Key key)
   switch (key)
   {
   case sf::Keyboard::Up:
+  case sf::Keyboard::W:
     m_player->cInput->up = false;
     break;
 
   case sf::Keyboard::Down:
+  case sf::Keyboard::S:
     m_player->cInput->down = false;
     break;
 
   case sf::Keyboard::Left:
+  case sf::Keyboard::A:
     m_player->cInput->left = false;
     break;
 
   case sf::Keyboard::Right:
+  case sf::Keyboard::D:
     m_player->cInput->right = false;
     break;
 
