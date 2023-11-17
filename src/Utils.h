@@ -1,9 +1,6 @@
 #pragma once
 
-class Utils
+namespace Utils
 {
-public:
-  Utils();
-
-  const int randBetween(int min, int max);
+const int randBetween(int min, int max);
 };
