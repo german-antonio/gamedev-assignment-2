@@ -33,9 +33,11 @@ class Game
   PlayerConfig m_playerConfig;
   EnemyConfig m_enemyConfig;
   BulletConfig m_bulletConfig;
+  Vec2 m_lastMousePos = {0.0f, 0.0f};
   int m_score = 0;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
+  int m_lastPlayerBulletSpawnTime = 0;
   bool m_paused = false;   // wether we update game logic
   bool m_running = true;   // wether the game is running
   bool m_gameOver = false; // wether the game is over
@@ -52,6 +54,7 @@ class Game
   void sLifespan();             // System: Lifespan
   void sRender();               // System: Render / Drawing
   void sEnemySpawner();         // System: Spawn Enemies
+  void sPlayerBulletSpawner();  // System: Spawn Enemies
   void sUpdatePlayerVelocity(); // System update player velocity vector
   void sCollision();            // System: Collisions
 
@@ -63,7 +66,9 @@ class Game
 
   void resolveKeyPressedAction(sf::Keyboard::Key key);
   void resolveKeyReleasedAction(sf::Keyboard::Key key);
-  void resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse);
+  void resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouseButton);
+  void resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove);
+  void resolveMouseButtonReleasedAction(sf::Event::MouseButtonEvent mouseButton);
 
 public:
   Game(const std::string& config); // constructor, takes in game config
