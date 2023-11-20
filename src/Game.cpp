@@ -32,11 +32,12 @@ void Game::run()
     m_entities.update();
 
     sEnemySpawner();
+    sPlayerBulletSpawner();
     sLifespan();
     sMovement();
     sCollision();
     sUserInput();
-    sUpdatePlayerVelocity();
+    sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
     sRender();
 
     // increment the current frame
@@ -51,11 +52,9 @@ void Game::spawnPlayer()
 {
   // TODO: Finish adding all properties of the player with the correct values from the config
 
-  // We create every entity by calling EntityManager.addEntity(tag)
-  // This returns a std::shared_ptr<Entity>, so we use 'auto' to save typing
   auto entity = m_entities.addEntity("player");
 
-  // Give this entity a transform so it spawns at (200,200) with velocity (1,1) and angle 0
+  // Give this entity a transform so it spawns at (200,200) with velocity (0,0) and angle 0
   // spawn at the center
   float mx = m_window.getSize().x / 2.0f;
   float my = m_window.getSize().y / 2.0f;
@@ -100,7 +99,7 @@ void Game::spawnEnemy()
   // calculate velocity vector
   Vec2 velocity((speed * cos(angle)), (speed * sin(angle)));
 
-  // Set transform component
+  // Set transform component with above data
   entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
@@ -123,13 +122,11 @@ void Game::spawnSmallenemies(std::shared_ptr<Entity> e)
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
 {
-  // TODO: Implement the spawning of a bullet which travels toward target
-  //       - bullet speed is given as a scalar speed
-  //       - you must set the velocity by using formula in notes
   auto bullet = m_entities.addEntity("bullet");
 
   // TODO: give the bullet all of its properties (read from config file)
-  float speed = 10;
+
+  float speed = 30;
 
   // so we have two vectors: playerPos and targetPos
   Vec2 playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
@@ -146,6 +143,8 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
   bullet->cShape = std::make_shared<CShape>(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
   bullet->cLifespan = std::make_shared<CLifespan>(50);
+
+  m_lastPlayerBulletSpawnTime = m_currentFrame;
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -155,14 +154,6 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
 
 void Game::sMovement()
 {
-  // TODO: implement all entity movement in this function
-  //       you should read the m_player->cInput component to determine if the player is moving
-
-  // UPDATE TO THE ABOVE:
-  // Personal note: we might not really do that, we are determining stuff based on cInput on a
-  // separate system function Game::sUpdatePlayerVelocity()
-  //
-  // We only move all the stuff from here, nothing else
   for (auto& e : m_entities.getEntities())
   {
     e->cTransform->pos.x += e->cTransform->velocity.x;
@@ -181,13 +172,9 @@ void Game::sLifespan()
     if (!e->cLifespan)
       continue;
 
-    std::cout << "Entity " << e->tag() << ": " << e->id() << ", lifespan left " << e->cLifespan->remaining << std::endl;
     //   if entity has > 0 remaining lifespan, subtract 1
     if (e->cLifespan->remaining > 0)
-    {
-      std::cout << "Entity " << e->id() << " gets lifespan reduced by 1" << std::endl;
       e->cLifespan->remaining -= 1;
-    }
     //   if it has lifespan and is alive
     // if (e->cLifespan && e->isActive())
     //     scale its alpha channel properly
@@ -196,10 +183,7 @@ void Game::sLifespan()
     // if it has lifespan and its time is up
     // destroy the entity
     else
-    {
-      std::cout << "Entity " << e->id() << " is being destroyed." << std::endl;
       e->destroy();
-    }
   }
 }
 
@@ -211,9 +195,16 @@ void Game::sCollision()
 
 void Game::sEnemySpawner()
 {
-  int spawnRate = 100; // TODO: Read from config file
-  if ((m_currentFrame - m_lastEnemySpawnTime) >= spawnRate)
+  int enemySpawnRate = 100; // TODO: Read from config file
+  if ((m_currentFrame - m_lastEnemySpawnTime) >= enemySpawnRate)
     spawnEnemy();
+}
+
+void Game::sPlayerBulletSpawner()
+{
+  int playerBulletSpawnRate = 10; // TODO: Read from config file
+  if (m_player->cInput->shoot == true && (m_currentFrame - m_lastPlayerBulletSpawnTime) >= playerBulletSpawnRate)
+    spawnBullet(m_player, Vec2(m_lastMousePos.x, m_lastMousePos.y));
 }
 
 void Game::sUpdatePlayerVelocity()
@@ -235,28 +226,14 @@ void Game::sUpdatePlayerVelocity()
 
 void Game::sRender()
 {
-  // TODO: change the code below to draw ALL of the entities
-  //       sample drawing of the player Entity that we have created
   m_window.clear();
 
-  // set the position of the shape based on the entity's transform->pos
-  // m_player->cShape->circle.setPosition(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
-
   // set the rotation of the shape based on the entity's transform->angle
-  m_player->cTransform->angle += 1.0f;
+  m_player->cTransform->angle += 2.0f;
   // m_player->cShape->circle.setRotation(m_player->cTransform->angle);
-
-  // draw the entity's sf::CircleShape
-  // m_window.draw(m_player->cShape->circle);
 
   for (auto& e : m_entities.getEntities())
   {
-    if (!e->isActive())
-    {
-      std::cout << "Skipping dead " << e->tag() << " entity (" << e->id() << ")" << std::endl;
-      continue;
-    }
-
     // std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
     //           << e->cShape->circle.getPosition().y << ")" << std::endl;
 
@@ -271,10 +248,6 @@ void Game::sRender()
 
 void Game::sUserInput()
 {
-  // TODO: handle user input here
-  //       note that you should only be setting the player's input component variables here
-  //       you should not implement the player's movement logic here
-  //       the movement system will read the variables you set in this function
   sf::Event event;
   while (m_window.pollEvent(event))
   {
@@ -291,6 +264,10 @@ void Game::sUserInput()
     // Mouse input handling
     if (event.type == sf::Event::MouseButtonPressed)
       resolveMouseButtonPressedAction(event.mouseButton);
+    if (event.type == sf::Event::MouseMoved)
+      resolveMouseMoveAction(event.mouseMove);
+    if (event.type == sf::Event::MouseButtonReleased)
+      resolveMouseButtonReleasedAction(event.mouseButton);
   }
 }
 
@@ -377,15 +354,34 @@ void Game::resolveKeyReleasedAction(sf::Keyboard::Key key)
 
 void Game::resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
 {
-  // TODO: Implement actual logic from mouse pressed actions
   if (mouse.button == sf::Mouse::Left)
   {
     std::cout << "Mouse L Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
-    // call spawnBullet here
-    spawnBullet(m_player, Vec2(mouse.x, mouse.y));
+    m_player->cInput->shoot = true;
+    m_lastMousePos = Vec2(mouse.x, mouse.y);
   }
 
   if (mouse.button == sf::Mouse::Right)
-    // call spawnSpecialWeapon here
+    std::cout << "Mouse R Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
+}
+
+void Game::resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove)
+{
+  if (m_player->cInput->shoot == true)
+  {
+    std::cout << "Moved mouse shooting, target POS (" << mouseMove.x << "," << mouseMove.y << ")" << std::endl;
+    m_lastMousePos = Vec2(mouseMove.x, mouseMove.y);
+  };
+}
+
+void Game::resolveMouseButtonReleasedAction(sf::Event::MouseButtonEvent mouse)
+{
+  if (mouse.button == sf::Mouse::Left)
+  {
+    std::cout << "Mouse L Released" << std::endl;
+    m_player->cInput->shoot = false;
+  }
+
+  if (mouse.button == sf::Mouse::Right)
     std::cout << "Mouse R Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
 }
