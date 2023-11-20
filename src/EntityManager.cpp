@@ -47,7 +47,7 @@ const EntityVec& EntityManager::getEntities() { return m_entities; }
 const EntityVec& EntityManager::getEntities(const std::string& tag)
 {
   // TODO: this is incorrect, return the correct vector from the map
-  return m_entities;
+  return m_entityMap[tag];
 }
 
 const int EntityManager::getTotalEntities() { return m_totalEntities; }
