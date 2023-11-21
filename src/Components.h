@@ -18,8 +18,7 @@ class CShape
 public:
   sf::CircleShape circle;
 
-  CShape(float radius, int points, const sf::Color& fill, const sf::Color& outline, float thickness)
-      : circle(radius, points)
+  CShape(float radius, int points, const sf::Color& fill, const sf::Color& outline, float thickness) : circle(radius, points)
   {
     circle.setFillColor(fill);
     circle.setOutlineColor(outline);
@@ -47,7 +46,6 @@ public:
   bool right = false;
   bool down = false;
   bool shoot = false;
-  bool gameOver = false;
   bool debug = false;
   CInput() {}
 };
@@ -57,4 +55,12 @@ public:
   int remaining = 0;
   int total = 0;
   CLifespan(int total) : remaining(total), total(total) {}
+};
+
+class CFont
+{
+public:
+  sf::Font font;
+  int size;
+  CFont(sf::Font fin, int sin) : font(fin), size(sin) {}
 };
