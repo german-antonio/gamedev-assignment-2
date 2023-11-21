@@ -29,12 +29,13 @@ class Game
   sf::RenderWindow m_window; // the window we will draw to
   EntityManager m_entities;  // vector of entities to maintain
   sf::Font m_font;           // the font we will use to draw
-  sf::Text m_text;           // the score text to be drawn to the screen
+  sf::Text m_scoreText;      // the score text to be drawn to the screen
   PlayerConfig m_playerConfig;
   EnemyConfig m_enemyConfig;
   BulletConfig m_bulletConfig;
   Vec2 m_lastMousePos = {0.0f, 0.0f};
   int m_score = 0;
+  int m_fontSize = 16;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
   int m_lastPlayerBulletSpawnTime = 0;
@@ -49,14 +50,15 @@ class Game
   void init(const std::string& config); // initialize the GameState with a config
   void setPaused(bool paused);          // pause the game
 
-  void sMovement();             // System: Entity position / movement update
-  void sUserInput();            // System: User Input
-  void sLifespan();             // System: Lifespan
-  void sRender();               // System: Render / Drawing
   void sEnemySpawner();         // System: Spawn Enemies
-  void sPlayerBulletSpawner();  // System: Spawn Enemies
-  void sUpdatePlayerVelocity(); // System update player velocity vector
+  void sPlayerBulletSpawner();  // System: Spawn Player Bullets
+  void sLifespan();             // System: Lifespan
+  void sMovement();             // System: Entity position / movement update
   void sCollision();            // System: Collisions
+  void sUserInput();            // System: User Input
+  void sUpdatePlayerVelocity(); // System: Update player velocity vector
+  void sRenderGameOver();       // System: Render / Game Over
+  void sRender();               // System: Render / Drawing
 
   void spawnPlayer();
   void spawnEnemy();
@@ -69,6 +71,7 @@ class Game
   void resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouseButton);
   void resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove);
   void resolveMouseButtonReleasedAction(sf::Event::MouseButtonEvent mouseButton);
+  bool collides(Vec2 pos1, Vec2 pos2, float totalRadius);
 
 public:
   Game(const std::string& config); // constructor, takes in game config
