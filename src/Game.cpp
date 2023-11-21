@@ -15,6 +15,12 @@ void Game::init(const std::string& path)
   //  std::ifstream fin(path);
   // fin >> m_playerConfig.SR >> m_playerConfig.CR >>
 
+  if (!m_font.loadFromFile("./assets/fonts/prospero.ttf"))
+  {
+    std::cerr << "Could not load game font." << std::endl;
+    exit(-1);
+  }
+
   // set up default window parameters
   m_window.create(sf::VideoMode(1280, 720), "Assignment II");
   m_window.setFramerateLimit(60);
@@ -31,14 +37,19 @@ void Game::run()
   {
     m_entities.update();
 
-    sEnemySpawner();
-    sPlayerBulletSpawner();
-    sLifespan();
-    sMovement();
-    sCollision();
-    sUserInput();
-    sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
-    sRender();
+    if (!m_gameOver)
+    {
+      sEnemySpawner();
+      sPlayerBulletSpawner();
+      sLifespan();
+      sMovement();
+      sCollision();
+      sUserInput();
+      sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
+      sRender();
+    }
+    else
+      sRenderGameOver();
 
     // increment the current frame
     // may need to be moved when pause implemented
@@ -53,16 +64,21 @@ void Game::spawnPlayer()
   // TODO: Finish adding all properties of the player with the correct values from the config
 
   auto entity = m_entities.addEntity("player");
+  float radius = 32.0f;
+  float thickness = 4.0f;
+  float points = 8;
 
   // Give this entity a transform so it spawns at (200,200) with velocity (0,0) and angle 0
   // spawn at the center
   float mx = m_window.getSize().x / 2.0f;
   float my = m_window.getSize().y / 2.0f;
   entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
+  // Set collision component separately
+  entity->cCollision = std::make_shared<CCollision>(radius + 2);
 
   // The entity's shape will have a radius 32, 8 sides, dark grey fill, and red outline of thickness 4
   // entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
-  entity->cShape = std::make_shared<CShape>(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f);
+  entity->cShape = std::make_shared<CShape>(radius, points, sf::Color(10, 10, 10), sf::Color(255, 0, 0), thickness);
 
   // Add an input component to the player so that we can use inputs
   entity->cInput = std::make_shared<CInput>();
@@ -101,6 +117,8 @@ void Game::spawnEnemy()
 
   // Set transform component with above data
   entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
+  // Set collision component separately
+  entity->cCollision = std::make_shared<CCollision>(radius + thickness);
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
   // TODO: entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
@@ -126,7 +144,9 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
 
   // TODO: give the bullet all of its properties (read from config file)
 
-  float speed = 30;
+  float speed = 10;
+  float radius = 10;
+  float points = 8;
 
   // so we have two vectors: playerPos and targetPos
   Vec2 playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
@@ -140,8 +160,9 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   Vec2 velocity((speed * cos(angle)), (speed * sin(angle))); // TODO: somewhow actually understand this
 
   // Set transform component
+  bullet->cShape = std::make_shared<CShape>(radius, points, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
   bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
-  bullet->cShape = std::make_shared<CShape>(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
+  bullet->cCollision = std::make_shared<CCollision>(radius + 1);
   bullet->cLifespan = std::make_shared<CLifespan>(50);
 
   m_lastPlayerBulletSpawnTime = m_currentFrame;
@@ -163,39 +184,81 @@ void Game::sMovement()
 
 void Game::sLifespan()
 {
-  // TODO: implement all lifespan functionality
-
-  // for all entities
   for (auto& e : m_entities.getEntities())
   {
     //   if entity has no lifespan component, skip it
     if (!e->cLifespan)
       continue;
 
-    //   if entity has > 0 remaining lifespan, subtract 1
     if (e->cLifespan->remaining > 0)
+    {
       e->cLifespan->remaining -= 1;
-    //   if it has lifespan and is alive
-    // if (e->cLifespan && e->isActive())
-    //     scale its alpha channel properly
-    // e->cShape->circle.setFillColor()
-
-    // if it has lifespan and its time is up
-    // destroy the entity
+      if (e->cLifespan && e->isActive())
+      {
+        sf::Color fill(e->cShape->circle.getFillColor());
+        sf::Color outline(e->cShape->circle.getOutlineColor());
+        int fadeOutRate = 250 / e->cLifespan->total;
+        fill.a -= fadeOutRate;
+        outline.a -= fadeOutRate;
+        e->cShape->circle.setFillColor(fill);
+        e->cShape->circle.setOutlineColor(outline);
+      }
+    }
     else
       e->destroy();
   }
+}
+
+bool Game::collides(Vec2 pos1, Vec2 pos2, float totalRadius)
+{
+  Vec2 origin1(pos1.x, pos1.y);
+  Vec2 origin2(pos2.x, pos2.y);
+
+  Vec2 diff = origin1 - origin2;
+
+  float dist = (diff.x * diff.x) + (diff.y * diff.y);
+
+  // if their distance is less than the sum of their radiuses, they are colliding
+  return dist < totalRadius * totalRadius;
 }
 
 void Game::sCollision()
 {
   // TODO: implement all proper collisions between entities
   //       be sure to use the collision radius, NOT the shape radius
+
+  for (auto e : m_entities.getEntities("enemy"))
+  {
+    // wether current enemy is colliding with player
+    if (collides(m_player->cTransform->pos, e->cTransform->pos, e->cCollision->radius + m_player->cCollision->radius))
+    {
+      m_gameOver = true;
+      m_entities.destroyAll();
+      break;
+    }
+
+    // wether current enemy is colliding with any of the bullets
+    for (auto b : m_entities.getEntities("bullet"))
+      if (collides(e->cTransform->pos, b->cTransform->pos, e->cCollision->radius + b->cCollision->radius))
+      {
+        std::cout << "!! ENEMY KILLED. Remaining: (" << m_entities.getEntities("enemy").size() << ")" << std::endl;
+        e->destroy();
+        b->destroy();
+      }
+
+    // wether current enemy is hitting an edge
+    if (e->cTransform->pos.x <= e->cCollision->radius ||
+        e->cTransform->pos.x + e->cCollision->radius >= m_window.getSize().x)
+      e->cTransform->velocity.x *= -1;
+    if (e->cTransform->pos.y <= e->cCollision->radius ||
+        e->cTransform->pos.y + e->cCollision->radius >= m_window.getSize().y)
+      e->cTransform->velocity.y *= -1;
+  }
 }
 
 void Game::sEnemySpawner()
 {
-  int enemySpawnRate = 100; // TODO: Read from config file
+  int enemySpawnRate = 50; // TODO: Read from config file
   if ((m_currentFrame - m_lastEnemySpawnTime) >= enemySpawnRate)
     spawnEnemy();
 }
@@ -222,6 +285,17 @@ void Game::sUpdatePlayerVelocity()
 
   if (m_player->cInput->right)
     m_player->cTransform->velocity.x = 3;
+}
+
+void Game::sRenderGameOver()
+{
+  m_window.clear();
+
+  sf::Text text("Game Over", m_font, m_fontSize);
+  text.setPosition((m_window.getSize().x / 2) - ((float)text.getLocalBounds().width / 2),
+                   (m_window.getSize().y / 2) - ((float)text.getLocalBounds().height / 2));
+
+  m_window.draw(text);
 }
 
 void Game::sRender()
@@ -368,10 +442,8 @@ void Game::resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
 void Game::resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove)
 {
   if (m_player->cInput->shoot == true)
-  {
-    std::cout << "Moved mouse shooting, target POS (" << mouseMove.x << "," << mouseMove.y << ")" << std::endl;
+    // std::cout << "Moved mouse shooting, target POS (" << mouseMove.x << "," << mouseMove.y << ")" << std::endl;
     m_lastMousePos = Vec2(mouseMove.x, mouseMove.y);
-  };
 }
 
 void Game::resolveMouseButtonReleasedAction(sf::Event::MouseButtonEvent mouse)
