@@ -35,13 +35,14 @@ class Game
   BulletConfig m_bulletConfig;
   Vec2 m_lastMousePos = {0.0f, 0.0f};
   int m_score = 0;
-  int m_fontSize = 16;
+  int m_fontSize = 32;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
   int m_lastPlayerBulletSpawnTime = 0;
   bool m_paused = false;   // wether we update game logic
   bool m_running = true;   // wether the game is running
   bool m_gameOver = false; // wether the game is over
+  bool m_reset = false;    // wether a game reset is due
   bool m_debug = false;    // wether debug mode is active
 
   std::shared_ptr<Entity> m_player;
@@ -50,6 +51,7 @@ class Game
   void init(const std::string& config); // initialize the GameState with a config
   void setPaused(bool paused);          // pause the game
 
+  void sReset();                // System: Reset the game
   void sEnemySpawner();         // System: Spawn Enemies
   void sPlayerBulletSpawner();  // System: Spawn Player Bullets
   void sLifespan();             // System: Lifespan
@@ -60,6 +62,7 @@ class Game
   void sRenderGameOver();       // System: Render / Game Over
   void sRender();               // System: Render / Drawing
 
+  void reset();
   void spawnPlayer();
   void spawnEnemy();
   void spawnSmallenemies(std::shared_ptr<Entity> entity);
