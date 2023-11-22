@@ -54,15 +54,6 @@ const int EntityManager::getTotalEntities() { return m_totalEntities; }
 
 void EntityManager::destroyAll()
 {
-  // Mark all entities for destruction
   for (auto& e : m_entities)
     e->destroy();
-
-  // Remove dead entities from the vectors and map
-  removeDeadEntities(m_entities);
-
-  for (auto& [tag, entityVec] : m_entityMap)
-    removeDeadEntities(entityVec);
-
-  m_totalEntities = 0; // Reset total entity count
 }
