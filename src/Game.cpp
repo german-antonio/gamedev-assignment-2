@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <math.h>
+#include <sstream>
 
 Game::Game(const std::string& config) { init(config); }
 
@@ -36,6 +37,8 @@ void Game::run()
   while (m_running)
   {
     m_entities.update();
+    sUserInput();
+    sReset();
 
     if (!m_gameOver)
     {
@@ -44,12 +47,10 @@ void Game::run()
       sLifespan();
       sMovement();
       sCollision();
-      sUserInput();
       sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
-      sRender();
     }
-    else
-      sRenderGameOver();
+
+    sRender();
 
     // increment the current frame
     // may need to be moved when pause implemented
@@ -58,6 +59,15 @@ void Game::run()
 }
 
 void Game::setPaused(bool paused) { m_paused = paused; }
+
+void Game::reset()
+{
+  m_reset = false;
+  m_gameOver = false;
+  m_killCount = 0;
+  m_entities.destroyAll();
+  spawnPlayer();
+}
 
 void Game::spawnPlayer()
 {
@@ -173,6 +183,12 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
   // TODO: implement your own special weapon
 }
 
+void Game::sReset()
+{
+  if (m_reset)
+    reset();
+}
+
 void Game::sMovement()
 {
   for (auto& e : m_entities.getEntities())
@@ -241,7 +257,9 @@ void Game::sCollision()
     for (auto b : m_entities.getEntities("bullet"))
       if (collides(e->cTransform->pos, b->cTransform->pos, e->cCollision->radius + b->cCollision->radius))
       {
+        m_killCount++;
         std::cout << "!! ENEMY KILLED. Remaining: (" << m_entities.getEntities("enemy").size() << ")" << std::endl;
+        std::cout << "CURRENT KILL COUNT: [" << m_killCount << "]" << std::endl;
         e->destroy();
         b->destroy();
       }
@@ -287,35 +305,47 @@ void Game::sUpdatePlayerVelocity()
     m_player->cTransform->velocity.x = 3;
 }
 
-void Game::sRenderGameOver()
+void Game::renderGameOver()
 {
-  m_window.clear();
+  sf::Text title("Game Over", m_font, m_fontSize);
+  title.setPosition((m_window.getSize().x / 2) - ((float)title.getLocalBounds().width / 2),
+                    (m_window.getSize().y / 2) - (((float)title.getLocalBounds().height / 2) * 3));
 
-  sf::Text text("Game Over", m_font, m_fontSize);
-  text.setPosition((m_window.getSize().x / 2) - ((float)text.getLocalBounds().width / 2),
-                   (m_window.getSize().y / 2) - ((float)text.getLocalBounds().height / 2));
+  std::ostringstream oss;
+  oss << "Killed: " << m_killCount;
 
-  m_window.draw(text);
+  // std::string killCountMsg = "Killed: " + m_killCount;
+  sf::Text killCount(oss.str(), m_font, m_fontSize);
+  killCount.setPosition((m_window.getSize().x / 2) - ((float)killCount.getLocalBounds().width / 2),
+                        (m_window.getSize().y / 2));
+
+  m_window.draw(title);
+  m_window.draw(killCount);
+}
+
+void Game::renderEntities()
+{
+  for (auto& e : m_entities.getEntities())
+  {
+    // std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
+    //           << e->cShape->circle.getPosition().y << ")" << std::endl;
+    e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+    if (e->tag() == "player")
+      e->cTransform->angle += 2.0f;
+    e->cTransform->angle += 1.0f;
+    e->cShape->circle.setRotation(e->cTransform->angle);
+    m_window.draw(e->cShape->circle);
+  }
 }
 
 void Game::sRender()
 {
   m_window.clear();
 
-  // set the rotation of the shape based on the entity's transform->angle
-  m_player->cTransform->angle += 2.0f;
-  // m_player->cShape->circle.setRotation(m_player->cTransform->angle);
-
-  for (auto& e : m_entities.getEntities())
-  {
-    // std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
-    //           << e->cShape->circle.getPosition().y << ")" << std::endl;
-
-    e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
-    e->cTransform->angle += 1.0f;
-    e->cShape->circle.setRotation(e->cTransform->angle);
-    m_window.draw(e->cShape->circle);
-  }
+  if (m_gameOver)
+    renderGameOver();
+  else
+    renderEntities();
 
   m_window.display();
 };
@@ -370,8 +400,7 @@ void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
     break;
 
   case sf::Keyboard::R:
-    m_gameOver = false;
-    // TODO: implement proper reset behaviour
+    m_reset = true;
     break;
 
     // case sf::Keyboard::S:
