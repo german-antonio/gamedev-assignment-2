@@ -35,10 +35,11 @@ class Game
   BulletConfig m_bulletConfig;
   Vec2 m_lastMousePos = {0.0f, 0.0f};
   int m_score = 0;
-  int m_fontSize = 32;
+  int m_fontSize = 64;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
   int m_lastPlayerBulletSpawnTime = 0;
+  int m_killCount = 0;
   bool m_paused = false;   // wether we update game logic
   bool m_running = true;   // wether the game is running
   bool m_gameOver = false; // wether the game is over
@@ -59,7 +60,6 @@ class Game
   void sCollision();            // System: Collisions
   void sUserInput();            // System: User Input
   void sUpdatePlayerVelocity(); // System: Update player velocity vector
-  void sRenderGameOver();       // System: Render / Game Over
   void sRender();               // System: Render / Drawing
 
   void reset();
@@ -68,6 +68,8 @@ class Game
   void spawnSmallenemies(std::shared_ptr<Entity> entity);
   void spawnBullet(std::shared_ptr<Entity> entity, const Vec2& mousePos);
   void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
+  void renderGameOver();
+  void renderEntities();
 
   void resolveKeyPressedAction(sf::Keyboard::Key key);
   void resolveKeyReleasedAction(sf::Keyboard::Key key);
