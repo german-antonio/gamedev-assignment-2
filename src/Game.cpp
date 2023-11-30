@@ -74,9 +74,10 @@ void Game::spawnPlayer()
   // TODO: Finish adding all properties of the player with the correct values from the config
 
   auto entity = m_entities.addEntity("player");
+
   float radius = 32.0f;
-  float thickness = 4.0f;
-  float points = 8;
+  // float thickness = 4.0f;
+  // float points = 8;
 
   // Give this entity a transform so it spawns at (200,200) with velocity (0,0) and angle 0
   // spawn at the center
@@ -84,11 +85,12 @@ void Game::spawnPlayer()
   float my = m_window.getSize().y / 2.0f;
   entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
   // Set collision component separately
-  entity->cCollision = std::make_shared<CCollision>(radius + 2);
+  entity->cCollision = std::make_shared<CCollision>(radius);
 
   // The entity's shape will have a radius 32, 8 sides, dark grey fill, and red outline of thickness 4
   // entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
-  entity->cShape = std::make_shared<CShape>(radius, points, sf::Color(10, 10, 10), sf::Color(255, 0, 0), thickness);
+  // entity->cShape = std::make_shared<CShape>(radius, points, sf::Color(10, 10, 10), sf::Color(255, 0, 0), thickness);
+  entity->cSprite = std::make_shared<CSprite>("./assets/textures/Sam.png", radius * 2);
 
   // Add an input component to the player so that we can use inputs
   entity->cInput = std::make_shared<CInput>();
@@ -213,7 +215,7 @@ void Game::sLifespan()
       {
         sf::Color fill(e->cShape->circle.getFillColor());
         sf::Color outline(e->cShape->circle.getOutlineColor());
-        int fadeOutRate = 250 / e->cLifespan->total;
+        int fadeOutRate = 250 / e->cLifespan->total; // 255 is max alpha, 250 prevents dissappearing too soon
         fill.a -= fadeOutRate;
         outline.a -= fadeOutRate;
         e->cShape->circle.setFillColor(fill);
@@ -327,14 +329,28 @@ void Game::renderEntities()
 {
   for (auto& e : m_entities.getEntities())
   {
-    // std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
-    //           << e->cShape->circle.getPosition().y << ")" << std::endl;
-    e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+    // NOT TODO: We are not going to fix this because in the future we'll never render shapes
+    // because it's stupid. Everything should be sprites
+
+    // render the player separately
     if (e->tag() == "player")
-      e->cTransform->angle += 2.0f;
-    e->cTransform->angle += 1.0f;
-    e->cShape->circle.setRotation(e->cTransform->angle);
-    m_window.draw(e->cShape->circle);
+    {
+      e->cSprite->sprite.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+      if (abs(e->cTransform->angle) >= m_maxPlayerAngle)
+        m_angleTransform *= -1;
+      e->cTransform->angle += m_angleTransform;
+      e->cSprite->sprite.setRotation(e->cTransform->angle);
+      m_window.draw(e->cSprite->sprite);
+    }
+    else
+    {
+      // std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
+      //           << e->cShape->circle.getPosition().y << ")" << std::endl;
+      e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+      e->cTransform->angle += 1.0f;
+      e->cShape->circle.setRotation(e->cTransform->angle);
+      m_window.draw(e->cShape->circle);
+    }
   }
 }
 
@@ -345,7 +361,14 @@ void Game::sRender()
   if (m_gameOver)
     renderGameOver();
   else
+  {
+    // Experimental stuff
+    sf::Cursor cursor;
+    if (cursor.loadFromSystem(sf::Cursor::Cross))
+      m_window.setMouseCursor(cursor);
+
     renderEntities();
+  }
 
   m_window.display();
 };
