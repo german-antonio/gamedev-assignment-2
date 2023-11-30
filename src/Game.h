@@ -33,7 +33,11 @@ class Game
   PlayerConfig m_playerConfig;
   EnemyConfig m_enemyConfig;
   BulletConfig m_bulletConfig;
+  sf::Cursor m_cursor;
+  sf::Cursor m_crosshair;
   Vec2 m_lastMousePos = {0.0f, 0.0f};
+  float m_maxPlayerAngle = 10.0f;
+  float m_angleTransform = 0.5f;
   int m_score = 0;
   int m_fontSize = 64;
   int m_currentFrame = 0;
@@ -48,19 +52,8 @@ class Game
 
   std::shared_ptr<Entity> m_player;
 
-  /* Game Systems */
   void init(const std::string& config); // initialize the GameState with a config
   void setPaused(bool paused);          // pause the game
-
-  void sReset();                // System: Reset the game
-  void sEnemySpawner();         // System: Spawn Enemies
-  void sPlayerBulletSpawner();  // System: Spawn Player Bullets
-  void sLifespan();             // System: Lifespan
-  void sMovement();             // System: Entity position / movement update
-  void sCollision();            // System: Collisions
-  void sUserInput();            // System: User Input
-  void sUpdatePlayerVelocity(); // System: Update player velocity vector
-  void sRender();               // System: Render / Drawing
 
   void reset();
   void spawnPlayer();
@@ -70,7 +63,6 @@ class Game
   void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
   void renderGameOver();
   void renderEntities();
-
   void resolveKeyPressedAction(sf::Keyboard::Key key);
   void resolveKeyReleasedAction(sf::Keyboard::Key key);
   void resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouseButton);
@@ -80,6 +72,16 @@ class Game
 
 public:
   Game(const std::string& config); // constructor, takes in game config
-
   void run();
+
+  /* Game Systems */
+  void sReset();                // System: Reset the game
+  void sEnemySpawner();         // System: Spawn Enemies
+  void sPlayerBulletSpawner();  // System: Spawn Player Bullets
+  void sLifespan();             // System: Lifespan
+  void sMovement();             // System: Entity position / movement update
+  void sCollision();            // System: Collisions
+  void sUserInput();            // System: User Input
+  void sUpdatePlayerVelocity(); // System: Update player velocity vector
+  void sRender();               // System: Render / Drawing
 };
