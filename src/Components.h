@@ -64,3 +64,18 @@ public:
   int size;
   CFont(sf::Font fin, int sin) : font(fin), size(sin) {}
 };
+
+class CSprite
+{
+public:
+  sf::Sprite sprite;
+  sf::Texture texture;
+  float size;
+  CSprite(std::string texturePath, float size) : size(size)
+  {
+    texture.loadFromFile(texturePath);
+    texture.setSmooth(true);
+    sprite.setTexture(texture);
+    sprite.setOrigin(size / 2, size / 2);
+  }
+};
