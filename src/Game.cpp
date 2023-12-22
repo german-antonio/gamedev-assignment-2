@@ -10,21 +10,33 @@ Game::Game(const std::string& config) { init(config); }
 
 void Game::init(const std::string& path)
 {
-  // TODO : read in config file here
-  //        use the premade PlayerConfig, EnemyConfig, BulletConfig variables
+  std::ifstream fin(path);
+  fin >>
+      // Window config
+      m_windowConfig.W >> m_windowConfig.H >> m_windowConfig.FL >> m_windowConfig.FS >>
+      // Font config
+      m_fontConfig.P >> m_fontConfig.S >> m_fontConfig.R >> m_fontConfig.G >> m_fontConfig.B >>
+      // Player config
+      m_playerConfig.SR >> m_playerConfig.CR >> m_playerConfig.S >> m_playerConfig.FR >> m_playerConfig.FG >>
+      m_playerConfig.FB >> m_playerConfig.OR >> m_playerConfig.OG >> m_playerConfig.OB >> m_playerConfig.OT >>
+      m_playerConfig.V >>
+      // Enemy config
+      m_enemyConfig.SR >> m_enemyConfig.CR >> m_enemyConfig.SMIN >> m_enemyConfig.SMAX >> m_enemyConfig.FR >>
+      m_enemyConfig.FG >> m_enemyConfig.FB >> m_enemyConfig.OR >> m_enemyConfig.OG >> m_enemyConfig.OB >> m_enemyConfig.OT >>
+      m_enemyConfig.VMIN >> m_enemyConfig.VMAX >> m_enemyConfig.SI >>
+      // Bullet config
+      m_bulletConfig.SR >> m_bulletConfig.CR >> m_bulletConfig.S >> m_bulletConfig.FR >> m_bulletConfig.FG >>
+      m_bulletConfig.FB >> m_bulletConfig.OR >> m_bulletConfig.OG >> m_bulletConfig.OB >> m_bulletConfig.OT >>
+      m_bulletConfig.V >> m_bulletConfig.L >> m_bulletConfig.R;
 
-  //  std::ifstream fin(path);
-  // fin >> m_playerConfig.SR >> m_playerConfig.CR >>
-
-  if (!m_font.loadFromFile("./assets/fonts/prospero.ttf"))
+  if (!m_font.loadFromFile(m_fontConfig.P))
   {
     std::cerr << "Could not load game font." << std::endl;
     exit(-1);
   }
 
-  // set up default window parameters
-  m_window.create(sf::VideoMode(1280, 720), "Assignment II");
-  m_window.setFramerateLimit(60);
+  m_window.create(sf::VideoMode(m_windowConfig.W, m_windowConfig.H), "Assignment II");
+  m_window.setFramerateLimit(m_windowConfig.FL);
 
   spawnPlayer();
 }
@@ -75,7 +87,7 @@ void Game::spawnPlayer()
 
   auto entity = m_entities.addEntity("player");
 
-  float radius = 32.0f;
+  float radius = m_playerConfig.CR;
   // float thickness = 4.0f;
   // float points = 8;
 
@@ -102,21 +114,16 @@ void Game::spawnPlayer()
 
 void Game::spawnEnemy()
 {
-  // TODO: make sure the enemy is spawned properly with the m_enemyConfig variables
-  //       the enemy must be spawned completely within the bounds of the window
-
   auto entity = m_entities.addEntity("enemy");
 
   // spawn at random point
-  int radius = 16;
-  float thickness = 4.0f;
-  int offset = radius + thickness;
+  int offset = m_enemyConfig.SR + m_enemyConfig.OT;
   int maxX = m_window.getSize().x - offset;
   int maxY = m_window.getSize().y - offset;
   float rndX = Utils::randBetween(offset, maxX);
   float rndY = Utils::randBetween(offset, maxY);
-  float speed = Utils::randBetween(2, 6);
-  int points = Utils::randBetween(3, 8);
+  float speed = Utils::randBetween(m_enemyConfig.SMIN, m_enemyConfig.SMAX);
+  int points = Utils::randBetween(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
 
   std::cout << "Enemy will be spawned at: (" << rndX << "," << rndY << ")" << std::endl;
 
@@ -130,11 +137,13 @@ void Game::spawnEnemy()
   // Set transform component with above data
   entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
   // Set collision component separately
-  entity->cCollision = std::make_shared<CCollision>(radius + thickness);
+  entity->cCollision = std::make_shared<CCollision>(m_enemyConfig.SR + m_enemyConfig.OT);
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
   // TODO: entity->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V, ...);
-  entity->cShape = std::make_shared<CShape>(radius, points, sf::Color(0, 0, 255), sf::Color(255, 255, 255), thickness);
+  sf::Color fill(m_enemyConfig.FR, m_enemyConfig.FG, m_enemyConfig.FB);
+  sf::Color outline(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB);
+  entity->cShape = std::make_shared<CShape>(m_enemyConfig.SR, points, fill, outline, m_enemyConfig.OT);
 
   // record when the most recent enemy was spawned
   m_lastEnemySpawnTime = m_currentFrame;
@@ -154,12 +163,6 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
 {
   auto bullet = m_entities.addEntity("bullet");
 
-  // TODO: give the bullet all of its properties (read from config file)
-
-  float speed = 10;
-  float radius = 10;
-  float points = 8;
-
   // so we have two vectors: playerPos and targetPos
   Vec2 playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
   Vec2 targetPos(target.x, target.y);
@@ -169,13 +172,15 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   // now we can use archtangent to get the angle
   float angle = atan2f(diff.y, diff.x);
   // calculate velocity vector
-  Vec2 velocity((speed * cos(angle)), (speed * sin(angle))); // TODO: somewhow actually understand this
+  Vec2 velocity((m_bulletConfig.S * cos(angle)), (m_bulletConfig.S * sin(angle))); // TODO: somewhow actually understand this
 
   // Set transform component
-  bullet->cShape = std::make_shared<CShape>(radius, points, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
+  bullet->cShape = std::make_shared<CShape>(
+      m_bulletConfig.SR, m_bulletConfig.V, sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
+      sf::Color(m_bulletConfig.OR, m_bulletConfig.OG, m_bulletConfig.OB), m_bulletConfig.OT);
   bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
-  bullet->cCollision = std::make_shared<CCollision>(radius + 1);
-  bullet->cLifespan = std::make_shared<CLifespan>(50);
+  bullet->cCollision = std::make_shared<CCollision>(m_bulletConfig.CR);
+  bullet->cLifespan = std::make_shared<CLifespan>(m_bulletConfig.L);
 
   m_lastPlayerBulletSpawnTime = m_currentFrame;
 }
@@ -278,15 +283,13 @@ void Game::sCollision()
 
 void Game::sEnemySpawner()
 {
-  int enemySpawnRate = 50; // TODO: Read from config file
-  if ((m_currentFrame - m_lastEnemySpawnTime) >= enemySpawnRate)
+  if ((m_currentFrame - m_lastEnemySpawnTime) >= m_enemyConfig.SI)
     spawnEnemy();
 }
 
 void Game::sPlayerBulletSpawner()
 {
-  int playerBulletSpawnRate = 10; // TODO: Read from config file
-  if (m_player->cInput->shoot == true && (m_currentFrame - m_lastPlayerBulletSpawnTime) >= playerBulletSpawnRate)
+  if (m_player->cInput->shoot == true && (m_currentFrame - m_lastPlayerBulletSpawnTime) >= m_bulletConfig.R)
     spawnBullet(m_player, Vec2(m_lastMousePos.x, m_lastMousePos.y));
 }
 
@@ -295,21 +298,21 @@ void Game::sUpdatePlayerVelocity()
   m_player->cTransform->velocity = {0, 0}; // TODO: make it deaccelerate like greenberry did
 
   if (m_player->cInput->up)
-    m_player->cTransform->velocity.y = -3;
+    m_player->cTransform->velocity.y = -1 * m_playerConfig.S;
 
   if (m_player->cInput->down)
-    m_player->cTransform->velocity.y = 3;
+    m_player->cTransform->velocity.y = m_playerConfig.S;
 
   if (m_player->cInput->left)
-    m_player->cTransform->velocity.x = -3;
+    m_player->cTransform->velocity.x = -1 * m_playerConfig.S;
 
   if (m_player->cInput->right)
-    m_player->cTransform->velocity.x = 3;
+    m_player->cTransform->velocity.x = m_playerConfig.S;
 }
 
 void Game::renderGameOver()
 {
-  sf::Text title("Game Over", m_font, m_fontSize);
+  sf::Text title("Game Over", m_font, m_fontConfig.S);
   title.setPosition((m_window.getSize().x / 2) - ((float)title.getLocalBounds().width / 2),
                     (m_window.getSize().y / 2) - (((float)title.getLocalBounds().height / 2) * 3));
 
@@ -317,7 +320,7 @@ void Game::renderGameOver()
   oss << "Killed: " << m_killCount;
 
   // std::string killCountMsg = "Killed: " + m_killCount;
-  sf::Text killCount(oss.str(), m_font, m_fontSize);
+  sf::Text killCount(oss.str(), m_font, m_fontConfig.S);
   killCount.setPosition((m_window.getSize().x / 2) - ((float)killCount.getLocalBounds().width / 2),
                         (m_window.getSize().y / 2));
 
