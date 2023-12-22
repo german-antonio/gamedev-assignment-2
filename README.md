@@ -22,7 +22,7 @@ Enemies
 DONE - Enemies will spawn in a random location on the screen every X frames, where X is defined in the configuration file.
 DONE - Enemies must not overlap the sides of the screen at the time of spawn.
 DONE - Enemies' shapes have random number of vertices, between a given minimum and maximum number, which is specified in the config file.
-- Enemy shape radius will be specified in the config file.
+DONE - Enemy shape radius will be specified in the config file.
 - Enemies will be given a random color upon spawning
 DONE - Enemies will be given a random speed upon spawning, between a minimum and maximum value specified in the config file.
 DONE - When an enemy reaches the edge of the windows, it should bounce off in the opposite direction at the same speed.
@@ -39,7 +39,7 @@ Score:
 
 Drawing:
 DONE - In the render system, all entities should be given a slow rotation, which makes the game look a little nicer.
-DONE - Any entity with a lidespan is currently alive, it should have its Color alpha channel set to a ratio depending on how long it has left to live.
+DONE - Any entity with a lifespan is currently alive, it should have its Color alpha channel set to a ratio depending on how long it has left to live.
   For example, if an Entity has a 100 frame lifespan, and it has been alive for 50 frames, its alpha value should be set to 0.5 * 255.
   The alpha should go from 255 when it is first spawned, to 0 on the last frame it is alive.
 
@@ -47,7 +47,7 @@ Misc
 - The 'P' key should pause the game
 DONE - The 'ESC' key should close the game 
 
-Configuration file
+DONE Configuration file
 The configuration file will have one line each specifying the window size, font format, player, bullet specification, and enemy
 specifications. Lines will be given in that order, with the following syntax:
 
