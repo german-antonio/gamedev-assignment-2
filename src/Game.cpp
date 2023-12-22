@@ -302,16 +302,16 @@ void Game::sUpdatePlayerVelocity()
 {
   m_player->cTransform->velocity = {0, 0}; // TODO: make it deaccelerate like greenberry did
 
-  if (m_player->cInput->up)
+  if (m_player->cInput->up && (m_player->cTransform->pos.y - m_player->cCollision->radius) >= 0)
     m_player->cTransform->velocity.y = -1 * m_playerConfig.S;
 
-  if (m_player->cInput->down)
+  if (m_player->cInput->down && (m_player->cTransform->pos.y + m_player->cCollision->radius) <= m_window.getSize().y)
     m_player->cTransform->velocity.y = m_playerConfig.S;
 
-  if (m_player->cInput->left)
+  if (m_player->cInput->left && (m_player->cTransform->pos.x - m_player->cCollision->radius) >= 0)
     m_player->cTransform->velocity.x = -1 * m_playerConfig.S;
 
-  if (m_player->cInput->right)
+  if (m_player->cInput->right && (m_player->cTransform->pos.x + m_player->cCollision->radius) <= m_window.getSize().x)
     m_player->cTransform->velocity.x = m_playerConfig.S;
 }
 
