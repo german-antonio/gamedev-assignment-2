@@ -10,24 +10,7 @@ Game::Game(const std::string& config) { init(config); }
 
 void Game::init(const std::string& path)
 {
-  std::ifstream fin(path);
-  fin >>
-      // Window config
-      m_windowConfig.W >> m_windowConfig.H >> m_windowConfig.FL >> m_windowConfig.FS >>
-      // Font config
-      m_fontConfig.P >> m_fontConfig.S >> m_fontConfig.R >> m_fontConfig.G >> m_fontConfig.B >>
-      // Player config
-      m_playerConfig.SR >> m_playerConfig.CR >> m_playerConfig.S >> m_playerConfig.FR >> m_playerConfig.FG >>
-      m_playerConfig.FB >> m_playerConfig.OR >> m_playerConfig.OG >> m_playerConfig.OB >> m_playerConfig.OT >>
-      m_playerConfig.V >>
-      // Enemy config
-      m_enemyConfig.SR >> m_enemyConfig.CR >> m_enemyConfig.SMIN >> m_enemyConfig.SMAX >> m_enemyConfig.FR >>
-      m_enemyConfig.FG >> m_enemyConfig.FB >> m_enemyConfig.OR >> m_enemyConfig.OG >> m_enemyConfig.OB >> m_enemyConfig.OT >>
-      m_enemyConfig.VMIN >> m_enemyConfig.VMAX >> m_enemyConfig.SI >>
-      // Bullet config
-      m_bulletConfig.SR >> m_bulletConfig.CR >> m_bulletConfig.S >> m_bulletConfig.FR >> m_bulletConfig.FG >>
-      m_bulletConfig.FB >> m_bulletConfig.OR >> m_bulletConfig.OG >> m_bulletConfig.OB >> m_bulletConfig.OT >>
-      m_bulletConfig.V >> m_bulletConfig.L >> m_bulletConfig.R;
+  setConfigFromFile(path);
 
   if (!m_font.loadFromFile(m_fontConfig.P))
   {
@@ -68,6 +51,28 @@ void Game::run()
     // may need to be moved when pause implemented
     m_currentFrame++;
   }
+}
+
+void Game::setConfigFromFile(const std::string& path)
+{
+  std::ifstream fin(path);
+  fin >>
+      // Window config
+      m_windowConfig.W >> m_windowConfig.H >> m_windowConfig.FL >> m_windowConfig.FS >>
+      // Font config
+      m_fontConfig.P >> m_fontConfig.S >> m_fontConfig.R >> m_fontConfig.G >> m_fontConfig.B >>
+      // Player config
+      m_playerConfig.SR >> m_playerConfig.CR >> m_playerConfig.S >> m_playerConfig.FR >> m_playerConfig.FG >>
+      m_playerConfig.FB >> m_playerConfig.OR >> m_playerConfig.OG >> m_playerConfig.OB >> m_playerConfig.OT >>
+      m_playerConfig.V >>
+      // Enemy config
+      m_enemyConfig.SR >> m_enemyConfig.CR >> m_enemyConfig.SMIN >> m_enemyConfig.SMAX >> m_enemyConfig.FR >>
+      m_enemyConfig.FG >> m_enemyConfig.FB >> m_enemyConfig.OR >> m_enemyConfig.OG >> m_enemyConfig.OB >> m_enemyConfig.OT >>
+      m_enemyConfig.VMIN >> m_enemyConfig.VMAX >> m_enemyConfig.SI >>
+      // Bullet config
+      m_bulletConfig.SR >> m_bulletConfig.CR >> m_bulletConfig.S >> m_bulletConfig.FR >> m_bulletConfig.FG >>
+      m_bulletConfig.FB >> m_bulletConfig.OR >> m_bulletConfig.OG >> m_bulletConfig.OB >> m_bulletConfig.OT >>
+      m_bulletConfig.V >> m_bulletConfig.L >> m_bulletConfig.R;
 }
 
 void Game::setPaused(bool paused) { m_paused = paused; }

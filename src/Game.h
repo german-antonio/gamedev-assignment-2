@@ -74,8 +74,9 @@ class Game
 
   std::shared_ptr<Entity> m_player;
 
-  void init(const std::string& config); // initialize the GameState with a config
-  void setPaused(bool paused);          // pause the game
+  void init(const std::string& config);            // initialize the GameState with a config
+  void setConfigFromFile(const std::string& path); // read a set of config values from a text file
+  void setPaused(bool paused);                     // pause the game
 
   void reset();
   void spawnPlayer();
