@@ -5,22 +5,43 @@
 #include "Entity.h"
 #include "EntityManager.h"
 
+struct WindowConfig
+{
+  int W, H, FL, FS;
+  // width, height, frame limit, full screen
+};
+
+struct FontConfig
+{
+  std::string P;
+  int S, R, G, B;
+  // path, size, red, green, blue
+};
+
 struct PlayerConfig
 {
   int SR, CR, FR, FG, FB, OR, OG, OB, OT, V;
   float S;
+  // shape radius, collision radius, max speed, fill red, fill green, fill blue,
+  // outline red, outline green, outline blue, outline thickness, vertices
 };
 
 struct EnemyConfig
 {
-  int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI;
+  int SR, CR, FR, FG, FB, OR, OG, OB, OT, VMIN, VMAX, SI;
   float SMIN, SMAX;
+  // shape radius, collision radius, min speed, max speed,
+  // outline red, outline green, outline blue,
+  // min vertices, max vertices, lifespan, spawn interval
 };
 
 struct BulletConfig
 {
-  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L;
+  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L, R;
   float S;
+  // shape radius, collision radius, speed,
+  // fill red, fill green, fill blue, outline red, outline green, outline blue
+  // outline thickness, vertices, lifespan, rate of fire
 };
 
 class Game
@@ -30,6 +51,8 @@ class Game
   EntityManager m_entities;  // vector of entities to maintain
   sf::Font m_font;           // the font we will use to draw
   sf::Text m_scoreText;      // the score text to be drawn to the screen
+  WindowConfig m_windowConfig;
+  FontConfig m_fontConfig;
   PlayerConfig m_playerConfig;
   EnemyConfig m_enemyConfig;
   BulletConfig m_bulletConfig;
@@ -39,7 +62,6 @@ class Game
   float m_maxPlayerAngle = 10.0f;
   float m_angleTransform = 0.5f;
   int m_score = 0;
-  int m_fontSize = 64;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
   int m_lastPlayerBulletSpawnTime = 0;
