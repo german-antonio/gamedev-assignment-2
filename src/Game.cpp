@@ -60,23 +60,22 @@ void Game::setConfigFromFile(const std::string& path)
       // Window config
       m_config.window.width >> m_config.window.height >> m_config.window.frameLimit >> m_config.window.fullScreen >>
       // Font config
-      m_config.font.path >> m_config.font.size >> m_config.font.color.red >> m_config.font.color.green >>
-      m_config.font.color.blue >>
+      m_config.font.path >> m_config.font.size >> m_config.font.color.r >> m_config.font.color.g >> m_config.font.color.b >>
       // Player config
       m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >>
-      m_config.player.fillColor.red >> m_config.player.fillColor.green >> m_config.player.fillColor.blue >>
-      m_config.player.outlineColor.red >> m_config.player.outlineColor.green >> m_config.player.outlineColor.blue >>
+      m_config.player.fillColor.r >> m_config.player.fillColor.g >> m_config.player.fillColor.b >>
+      m_config.player.outlineColor.r >> m_config.player.outlineColor.g >> m_config.player.outlineColor.b >>
       m_config.player.outlineThickness >> m_config.player.vertices >>
       // Enemy config
       m_config.enemy.shapeRadius >> m_config.enemy.collisionRadius >> m_config.enemy.minSpeed >> m_config.enemy.maxSpeed >>
-      m_config.enemy.fillColor.red >> m_config.enemy.fillColor.green >> m_config.enemy.fillColor.blue >>
-      m_config.enemy.outlineColor.red >> m_config.enemy.outlineColor.green >> m_config.enemy.outlineColor.blue >>
+      m_config.enemy.fillColor.r >> m_config.enemy.fillColor.g >> m_config.enemy.fillColor.b >>
+      m_config.enemy.outlineColor.r >> m_config.enemy.outlineColor.g >> m_config.enemy.outlineColor.b >>
       m_config.enemy.outlineThickness >> m_config.enemy.minVertices >> m_config.enemy.maxVertices >>
       m_config.enemy.spawnInterval >>
       // Bullet config
       m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >>
-      m_config.bullet.fillColor.red >> m_config.bullet.fillColor.green >> m_config.bullet.fillColor.blue >>
-      m_config.bullet.outlineColor.red >> m_config.bullet.outlineColor.green >> m_config.bullet.outlineColor.blue >>
+      m_config.bullet.fillColor.r >> m_config.bullet.fillColor.g >> m_config.bullet.fillColor.b >>
+      m_config.bullet.outlineColor.r >> m_config.bullet.outlineColor.g >> m_config.bullet.outlineColor.b >>
       m_config.bullet.outlineThickness >> m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate;
 }
 
@@ -151,8 +150,8 @@ void Game::spawnEnemy()
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
   // TODO: entity->cShape = std::make_shared<CShape>(m_config.player.shapeRadius, m_config.player.V, ...);
-  sf::Color fill(m_config.enemy.fillColor.red, m_config.enemy.fillColor.green, m_config.enemy.fillColor.blue);
-  sf::Color outline(m_config.enemy.outlineColor.red, m_config.enemy.outlineColor.green, m_config.enemy.outlineColor.blue);
+  sf::Color fill(m_config.enemy.fillColor);
+  sf::Color outline(m_config.enemy.outlineColor);
   entity->cShape =
       std::make_shared<CShape>(m_config.enemy.shapeRadius, points, fill, outline, m_config.enemy.outlineThickness);
 
@@ -187,11 +186,9 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
                 (m_config.bullet.speed * sin(angle))); // TODO: somewhow actually understand this
 
   // Set transform component
-  bullet->cShape = std::make_shared<CShape>(
-      m_config.bullet.shapeRadius, m_config.bullet.vertices,
-      sf::Color(m_config.bullet.fillColor.red, m_config.bullet.fillColor.green, m_config.bullet.fillColor.blue),
-      sf::Color(m_config.bullet.outlineColor.red, m_config.bullet.outlineColor.green, m_config.bullet.outlineColor.blue),
-      m_config.bullet.outlineThickness);
+  bullet->cShape =
+      std::make_shared<CShape>(m_config.bullet.shapeRadius, m_config.bullet.vertices, sf::Color(m_config.bullet.fillColor),
+                               sf::Color(m_config.bullet.outlineColor), m_config.bullet.outlineThickness);
   bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
   bullet->cCollision = std::make_shared<CCollision>(m_config.bullet.collisionRadius);
   bullet->cLifespan = std::make_shared<CLifespan>(m_config.bullet.lifespan);
