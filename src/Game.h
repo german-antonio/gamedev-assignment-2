@@ -11,12 +11,6 @@ struct FontConfig;
 struct PlayerConfig;
 struct EnemyConfig;
 struct BulletConfig;
-struct Color;
-
-struct Color
-{
-  int red, green, blue;
-};
 
 struct WindowConfig
 {
@@ -27,27 +21,27 @@ struct FontConfig
 {
   std::string path;
   int size;
-  Color color;
+  sf::Color color;
 };
 
 struct PlayerConfig
 {
   int shapeRadius, collisionRadius, outlineThickness, vertices;
-  Color fillColor, outlineColor;
+  sf::Color fillColor, outlineColor;
   float maxSpeed;
 };
 
 struct EnemyConfig
 {
   int shapeRadius, collisionRadius, outlineThickness, minVertices, maxVertices, spawnInterval;
-  Color fillColor, outlineColor;
+  sf::Color fillColor, outlineColor;
   float minSpeed, maxSpeed;
 };
 
 struct BulletConfig
 {
   int shapeRadius, collisionRadius, outlineThickness, vertices, lifespan, rate;
-  Color fillColor, outlineColor;
+  sf::Color fillColor, outlineColor;
   float speed;
 };
 
