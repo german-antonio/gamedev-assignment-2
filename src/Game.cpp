@@ -56,27 +56,44 @@ void Game::run()
 void Game::setConfigFromFile(const std::string& path)
 {
   std::ifstream fin(path);
+  int fontRed, fontGreen, fontBlue, playerFillRed, playerFillGreen, playerFillBlue, playerOutlineRed, playerOutlineGreen,
+      playerOutlineBlue, enemyFillRed, enemyFillGreen, enemyFillBlue, enemyOutlineRed, enemyOutlineGreen, enemyOutlineBlue,
+      bulletFillRed, bulletFillGreen, bulletFillBlue, bulletOutlineRed, bulletOutlineGreen, bulletOutlineBlue;
   fin >>
       // Window config
       m_config.window.width >> m_config.window.height >> m_config.window.frameLimit >> m_config.window.fullScreen >>
       // Font config
-      m_config.font.path >> m_config.font.size >> m_config.font.color.r >> m_config.font.color.g >> m_config.font.color.b >>
+      m_config.font.path >> m_config.font.size >> fontRed >> fontGreen >> fontBlue >>
       // Player config
-      m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >>
-      m_config.player.fillColor.r >> m_config.player.fillColor.g >> m_config.player.fillColor.b >>
-      m_config.player.outlineColor.r >> m_config.player.outlineColor.g >> m_config.player.outlineColor.b >>
+      m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >> playerFillRed >>
+      playerFillGreen >> playerFillBlue >> playerOutlineRed >> playerOutlineGreen >> playerOutlineBlue >>
       m_config.player.outlineThickness >> m_config.player.vertices >>
       // Enemy config
       m_config.enemy.shapeRadius >> m_config.enemy.collisionRadius >> m_config.enemy.minSpeed >> m_config.enemy.maxSpeed >>
-      m_config.enemy.fillColor.r >> m_config.enemy.fillColor.g >> m_config.enemy.fillColor.b >>
-      m_config.enemy.outlineColor.r >> m_config.enemy.outlineColor.g >> m_config.enemy.outlineColor.b >>
+      enemyFillRed >> enemyFillGreen >> enemyFillBlue >> enemyOutlineRed >> enemyOutlineGreen >> enemyOutlineBlue >>
       m_config.enemy.outlineThickness >> m_config.enemy.minVertices >> m_config.enemy.maxVertices >>
       m_config.enemy.spawnInterval >>
       // Bullet config
-      m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >>
-      m_config.bullet.fillColor.r >> m_config.bullet.fillColor.g >> m_config.bullet.fillColor.b >>
-      m_config.bullet.outlineColor.r >> m_config.bullet.outlineColor.g >> m_config.bullet.outlineColor.b >>
+      m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >> bulletFillRed >>
+      bulletFillGreen >> bulletFillBlue >> bulletOutlineRed >> bulletOutlineGreen >> bulletOutlineBlue >>
       m_config.bullet.outlineThickness >> m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate;
+
+  m_config.font.color =
+      sf::Color(static_cast<sf::Uint8>(fontRed), static_cast<sf::Uint8>(fontGreen), static_cast<sf::Uint8>(fontBlue));
+  m_config.player.fillColor = sf::Color(static_cast<sf::Uint8>(playerFillRed), static_cast<sf::Uint8>(playerFillGreen),
+                                        static_cast<sf::Uint8>(playerFillBlue));
+  m_config.player.outlineColor =
+      sf::Color(static_cast<sf::Uint8>(playerOutlineRed), static_cast<sf::Uint8>(playerOutlineGreen),
+                static_cast<sf::Uint8>(playerOutlineBlue));
+  m_config.enemy.fillColor = sf::Color(static_cast<sf::Uint8>(enemyFillRed), static_cast<sf::Uint8>(enemyFillGreen),
+                                       static_cast<sf::Uint8>(enemyFillBlue));
+  m_config.enemy.outlineColor = sf::Color(static_cast<sf::Uint8>(enemyOutlineRed), static_cast<sf::Uint8>(enemyOutlineGreen),
+                                          static_cast<sf::Uint8>(enemyOutlineBlue));
+  m_config.bullet.fillColor = sf::Color(static_cast<sf::Uint8>(bulletFillRed), static_cast<sf::Uint8>(bulletFillGreen),
+                                        static_cast<sf::Uint8>(bulletFillBlue));
+  m_config.bullet.outlineColor =
+      sf::Color(static_cast<sf::Uint8>(bulletOutlineRed), static_cast<sf::Uint8>(bulletOutlineGreen),
+                static_cast<sf::Uint8>(bulletOutlineBlue));
 }
 
 void Game::setPaused(bool paused) { m_paused = paused; }
@@ -150,10 +167,10 @@ void Game::spawnEnemy()
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
   // TODO: entity->cShape = std::make_shared<CShape>(m_config.player.shapeRadius, m_config.player.V, ...);
-  sf::Color fill(m_config.enemy.fillColor);
-  sf::Color outline(m_config.enemy.outlineColor);
+  sf::Color fillColor(Utils::randBetween(0, 255), Utils::randBetween(0, 255), Utils::randBetween(0, 255));
+  sf::Color outlineColor(Utils::randBetween(0, 255), Utils::randBetween(0, 255), Utils::randBetween(0, 255));
   entity->cShape =
-      std::make_shared<CShape>(m_config.enemy.shapeRadius, points, fill, outline, m_config.enemy.outlineThickness);
+      std::make_shared<CShape>(m_config.enemy.shapeRadius, points, fillColor, outlineColor, m_config.enemy.outlineThickness);
 
   // record when the most recent enemy was spawned
   m_lastEnemySpawnTime = m_currentFrame;
@@ -186,9 +203,11 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
                 (m_config.bullet.speed * sin(angle))); // TODO: somewhow actually understand this
 
   // Set transform component
-  bullet->cShape =
-      std::make_shared<CShape>(m_config.bullet.shapeRadius, m_config.bullet.vertices, sf::Color(m_config.bullet.fillColor),
-                               sf::Color(m_config.bullet.outlineColor), m_config.bullet.outlineThickness);
+  bullet->cShape = std::make_shared<CShape>(
+      m_config.bullet.shapeRadius, m_config.bullet.vertices,
+      sf::Color(m_config.bullet.fillColor.r, m_config.bullet.fillColor.g, m_config.bullet.fillColor.b),
+      sf::Color(m_config.bullet.outlineColor.r, m_config.bullet.outlineColor.g, m_config.bullet.outlineColor.b),
+      m_config.bullet.outlineThickness);
   bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
   bullet->cCollision = std::make_shared<CCollision>(m_config.bullet.collisionRadius);
   bullet->cLifespan = std::make_shared<CLifespan>(m_config.bullet.lifespan);
