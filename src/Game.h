@@ -5,43 +5,59 @@
 #include "Entity.h"
 #include "EntityManager.h"
 
+// Forward declarations prevent circular dependencies and declarations order problems
+struct WindowConfig;
+struct FontConfig;
+struct PlayerConfig;
+struct EnemyConfig;
+struct BulletConfig;
+struct Color;
+
+struct Color
+{
+  int red, green, blue;
+};
+
 struct WindowConfig
 {
-  int W, H, FL, FS;
-  // width, height, frame limit, full screen
+  int width, height, frameLimit, fullScreen;
 };
 
 struct FontConfig
 {
-  std::string P;
-  int S, R, G, B;
-  // path, size, red, green, blue
+  std::string path;
+  int size;
+  Color color;
 };
 
 struct PlayerConfig
 {
-  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V;
-  float S;
-  // shape radius, collision radius, max speed, fill red, fill green, fill blue,
-  // outline red, outline green, outline blue, outline thickness, vertices
+  int shapeRadius, collisionRadius, outlineThickness, vertices;
+  Color fillColor, outlineColor;
+  float maxSpeed;
 };
 
 struct EnemyConfig
 {
-  int SR, CR, FR, FG, FB, OR, OG, OB, OT, VMIN, VMAX, SI;
-  float SMIN, SMAX;
-  // shape radius, collision radius, min speed, max speed,
-  // outline red, outline green, outline blue,
-  // min vertices, max vertices, lifespan, spawn interval
+  int shapeRadius, collisionRadius, outlineThickness, minVertices, maxVertices, spawnInterval;
+  Color fillColor, outlineColor;
+  float minSpeed, maxSpeed;
 };
 
 struct BulletConfig
 {
-  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L, R;
-  float S;
-  // shape radius, collision radius, speed,
-  // fill red, fill green, fill blue, outline red, outline green, outline blue
-  // outline thickness, vertices, lifespan, rate of fire
+  int shapeRadius, collisionRadius, outlineThickness, vertices, lifespan, rate;
+  Color fillColor, outlineColor;
+  float speed;
+};
+
+struct GameConfig
+{
+  WindowConfig window;
+  FontConfig font;
+  PlayerConfig player;
+  EnemyConfig enemy;
+  BulletConfig bullet;
 };
 
 class Game
@@ -51,11 +67,7 @@ class Game
   EntityManager m_entities;  // vector of entities to maintain
   sf::Font m_font;           // the font we will use to draw
   sf::Text m_scoreText;      // the score text to be drawn to the screen
-  WindowConfig m_windowConfig;
-  FontConfig m_fontConfig;
-  PlayerConfig m_playerConfig;
-  EnemyConfig m_enemyConfig;
-  BulletConfig m_bulletConfig;
+  GameConfig m_config;
   sf::Cursor m_cursor;
   sf::Cursor m_crosshair;
   Vec2 m_lastMousePos = {0.0f, 0.0f};
