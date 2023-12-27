@@ -23,7 +23,7 @@ DONE - Enemies will spawn in a random location on the screen every X frames, whe
 DONE - Enemies must not overlap the sides of the screen at the time of spawn.
 DONE - Enemies' shapes have random number of vertices, between a given minimum and maximum number, which is specified in the config file.
 DONE - Enemy shape radius will be specified in the config file.
-- Enemies will be given a random color upon spawning
+DONE - Enemies will be given a random color upon spawning
 DONE - Enemies will be given a random speed upon spawning, between a minimum and maximum value specified in the config file.
 DONE - When an enemy reaches the edge of the windows, it should bounce off in the opposite direction at the same speed.
 - When (large) enemies collide with a bullet or player, they are destroyed, and N small enemies spawn in its place, where
