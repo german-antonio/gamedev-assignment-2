@@ -6,7 +6,7 @@ DONE - The player is represented by a shape which is defined in the config file
 DONE - The player must spawn in the center of the screen at the beginning of the game, and after it dies (collides with an enemy)
 DONE - The player moves by a speed read from the config file in these directions
   Up: W key, Left: A Key, Down: S key, Right: D key
-- The player is confined to move only within the bounds of the window
+DONE - The player is confined to move only within the bounds of the window
 DONE - The player will shoot a bullet toward the mouse pointer when the left mouse button is clicked. The speed, size, and lifespan of the bullets are read
   from the config file
 
