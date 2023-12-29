@@ -6,6 +6,8 @@
 #include <math.h>
 #include <sstream>
 
+using namespace Utils;
+
 Game::Game(const std::string& config) { init(config); }
 
 void Game::init(const std::string& path)
@@ -56,44 +58,35 @@ void Game::run()
 void Game::setConfigFromFile(const std::string& path)
 {
   std::ifstream fin(path);
-  int fontRed, fontGreen, fontBlue, playerFillRed, playerFillGreen, playerFillBlue, playerOutlineRed, playerOutlineGreen,
-      playerOutlineBlue, enemyFillRed, enemyFillGreen, enemyFillBlue, enemyOutlineRed, enemyOutlineGreen, enemyOutlineBlue,
-      bulletFillRed, bulletFillGreen, bulletFillBlue, bulletOutlineRed, bulletOutlineGreen, bulletOutlineBlue;
+  int fontR, fontG, fontB, playerFillR, playerFillG, playerFillB, playerOutlineR, playerOutlineG, playerOutlineB, enemyFillR,
+      enemyFillG, enemyFillB, enemyOutlineR, enemyOutlineG, enemyOutlineB, bulletFillR, bulletFillG, bulletFillB,
+      bulletOutlineR, bulletOutlineG, bulletOutlineB;
   fin >>
       // Window config
       m_config.window.width >> m_config.window.height >> m_config.window.frameLimit >> m_config.window.fullScreen >>
       // Font config
-      m_config.font.path >> m_config.font.size >> fontRed >> fontGreen >> fontBlue >>
+      m_config.font.path >> m_config.font.size >> fontR >> fontG >> fontB >>
       // Player config
-      m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >> playerFillRed >>
-      playerFillGreen >> playerFillBlue >> playerOutlineRed >> playerOutlineGreen >> playerOutlineBlue >>
-      m_config.player.outlineThickness >> m_config.player.vertices >>
+      m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >> playerFillR >>
+      playerFillG >> playerFillB >> playerOutlineR >> playerOutlineG >> playerOutlineB >> m_config.player.outlineThickness >>
+      m_config.player.vertices >>
       // Enemy config
       m_config.enemy.shapeRadius >> m_config.enemy.collisionRadius >> m_config.enemy.minSpeed >> m_config.enemy.maxSpeed >>
-      enemyFillRed >> enemyFillGreen >> enemyFillBlue >> enemyOutlineRed >> enemyOutlineGreen >> enemyOutlineBlue >>
+      enemyFillR >> enemyFillG >> enemyFillB >> enemyOutlineR >> enemyOutlineG >> enemyOutlineB >>
       m_config.enemy.outlineThickness >> m_config.enemy.minVertices >> m_config.enemy.maxVertices >>
       m_config.enemy.spawnInterval >>
       // Bullet config
-      m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >> bulletFillRed >>
-      bulletFillGreen >> bulletFillBlue >> bulletOutlineRed >> bulletOutlineGreen >> bulletOutlineBlue >>
-      m_config.bullet.outlineThickness >> m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate;
+      m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >> bulletFillR >>
+      bulletFillG >> bulletFillB >> bulletOutlineR >> bulletOutlineG >> bulletOutlineB >> m_config.bullet.outlineThickness >>
+      m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate;
 
-  m_config.font.color =
-      sf::Color(static_cast<sf::Uint8>(fontRed), static_cast<sf::Uint8>(fontGreen), static_cast<sf::Uint8>(fontBlue));
-  m_config.player.fillColor = sf::Color(static_cast<sf::Uint8>(playerFillRed), static_cast<sf::Uint8>(playerFillGreen),
-                                        static_cast<sf::Uint8>(playerFillBlue));
-  m_config.player.outlineColor =
-      sf::Color(static_cast<sf::Uint8>(playerOutlineRed), static_cast<sf::Uint8>(playerOutlineGreen),
-                static_cast<sf::Uint8>(playerOutlineBlue));
-  m_config.enemy.fillColor = sf::Color(static_cast<sf::Uint8>(enemyFillRed), static_cast<sf::Uint8>(enemyFillGreen),
-                                       static_cast<sf::Uint8>(enemyFillBlue));
-  m_config.enemy.outlineColor = sf::Color(static_cast<sf::Uint8>(enemyOutlineRed), static_cast<sf::Uint8>(enemyOutlineGreen),
-                                          static_cast<sf::Uint8>(enemyOutlineBlue));
-  m_config.bullet.fillColor = sf::Color(static_cast<sf::Uint8>(bulletFillRed), static_cast<sf::Uint8>(bulletFillGreen),
-                                        static_cast<sf::Uint8>(bulletFillBlue));
-  m_config.bullet.outlineColor =
-      sf::Color(static_cast<sf::Uint8>(bulletOutlineRed), static_cast<sf::Uint8>(bulletOutlineGreen),
-                static_cast<sf::Uint8>(bulletOutlineBlue));
+  m_config.font.color = sf::Color(toUint8(fontR), toUint8(fontG), toUint8(fontB));
+  m_config.player.fillColor = sf::Color(toUint8(playerFillR), toUint8(playerFillG), toUint8(playerFillB));
+  m_config.player.outlineColor = sf::Color(toUint8(playerOutlineR), toUint8(playerOutlineG), toUint8(playerOutlineB));
+  m_config.enemy.fillColor = sf::Color(toUint8(enemyFillR), toUint8(enemyFillG), toUint8(enemyFillB));
+  m_config.enemy.outlineColor = sf::Color(toUint8(enemyOutlineR), toUint8(enemyOutlineG), toUint8(enemyOutlineB));
+  m_config.bullet.fillColor = sf::Color(toUint8(bulletFillR), toUint8(bulletFillG), toUint8(bulletFillB));
+  m_config.bullet.outlineColor = sf::Color(toUint8(bulletOutlineR), toUint8(bulletOutlineG), toUint8(bulletOutlineB));
 }
 
 void Game::setPaused(bool paused) { m_paused = paused; }
@@ -146,10 +139,10 @@ void Game::spawnEnemy()
   int offset = m_config.enemy.shapeRadius + m_config.enemy.outlineThickness;
   int maxX = m_window.getSize().x - offset;
   int maxY = m_window.getSize().y - offset;
-  float rndX = Utils::randBetween(offset, maxX);
-  float rndY = Utils::randBetween(offset, maxY);
-  float speed = Utils::randBetween(m_config.enemy.minSpeed, m_config.enemy.maxSpeed);
-  int points = Utils::randBetween(m_config.enemy.minVertices, m_config.enemy.maxVertices);
+  float rndX = randBetween(offset, maxX);
+  float rndY = randBetween(offset, maxY);
+  float speed = randBetween(m_config.enemy.minSpeed, m_config.enemy.maxSpeed);
+  int points = randBetween(m_config.enemy.minVertices, m_config.enemy.maxVertices);
 
   std::cout << "Enemy will be spawned at: (" << rndX << "," << rndY << ")" << std::endl;
 
@@ -167,8 +160,8 @@ void Game::spawnEnemy()
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
   // TODO: entity->cShape = std::make_shared<CShape>(m_config.player.shapeRadius, m_config.player.V, ...);
-  sf::Color fillColor(Utils::randBetween(0, 255), Utils::randBetween(0, 255), Utils::randBetween(0, 255));
-  sf::Color outlineColor(Utils::randBetween(0, 255), Utils::randBetween(0, 255), Utils::randBetween(0, 255));
+  sf::Color fillColor(randBetween(0, 255), randBetween(0, 255), randBetween(0, 255));
+  sf::Color outlineColor(randBetween(0, 255), randBetween(0, 255), randBetween(0, 255));
   entity->cShape =
       std::make_shared<CShape>(m_config.enemy.shapeRadius, points, fillColor, outlineColor, m_config.enemy.outlineThickness);
 
@@ -413,7 +406,10 @@ void Game::sUserInput()
   {
     // this event triggers when the window is closed
     if (event.type == sf::Event::Closed)
+    {
       m_running = false;
+      m_window.close();
+    }
 
     // Keyboard input handling
     if (event.type == sf::Event::KeyPressed)
@@ -472,6 +468,7 @@ void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
     break;
 
   case sf::Keyboard::Escape:
+    m_running = false;
     m_window.close();
     break;
 
