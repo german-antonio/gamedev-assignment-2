@@ -12,17 +12,22 @@ Game::Game(const std::string& config) { init(config); }
 
 void Game::init(const std::string& path)
 {
+  // read and set game configuration from config file
   setConfigFromFile(path);
-
   if (!m_font.loadFromFile(m_config.font.path))
   {
     std::cerr << "Could not load game font." << std::endl;
     exit(-1);
   }
 
+  // seed the random number generator with current time on game initialization
+  srand(time(NULL));
+
+  // set game window
   m_window.create(sf::VideoMode(m_config.window.width, m_config.window.height), "Assignment II");
   m_window.setFramerateLimit(m_config.window.frameLimit);
 
+  // spawn the player character
   spawnPlayer();
 }
 
