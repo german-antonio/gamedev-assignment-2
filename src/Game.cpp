@@ -70,7 +70,7 @@ void Game::setConfigFromFile(const std::string& path)
       // Window config
       m_config.window.width >> m_config.window.height >> m_config.window.frameLimit >> m_config.window.fullScreen >>
       // Font config
-      m_config.font.path >> m_config.font.size >> fontR >> fontG >> fontB >>
+      m_config.font.path >> m_config.font.sizeS >> m_config.font.sizeM >> m_config.font.sizeL >> fontR >> fontG >> fontB >>
       // Player config
       m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >> playerFillR >>
       playerFillG >> playerFillB >> playerOutlineR >> playerOutlineG >> playerOutlineB >> m_config.player.outlineThickness >>
@@ -100,7 +100,7 @@ void Game::reset()
 {
   m_reset = false;
   m_gameOver = false;
-  m_killCount = 0;
+  m_score = 0;
   m_entities.destroyAll();
   spawnPlayer();
 }
@@ -292,9 +292,9 @@ void Game::sCollision()
     for (auto b : m_entities.getEntities("bullet"))
       if (collides(e->cTransform->pos, b->cTransform->pos, e->cCollision->radius + b->cCollision->radius))
       {
-        m_killCount++;
+        m_score++;
         std::cout << "!! ENEMY KILLED. Remaining: (" << m_entities.getEntities("enemy").size() << ")" << std::endl;
-        std::cout << "CURRENT KILL COUNT: [" << m_killCount << "]" << std::endl;
+        std::cout << "CURRENT KILL COUNT: [" << m_score << "]" << std::endl;
         e->destroy();
         b->destroy();
       }
@@ -340,19 +340,30 @@ void Game::sUpdatePlayerVelocity()
 
 void Game::renderGameOver()
 {
-  sf::Text title("Game Over", m_font, m_config.font.size);
+  sf::Text title("Game Over", m_font, m_config.font.sizeL);
   title.setPosition((m_window.getSize().x / 2) - ((float)title.getLocalBounds().width / 2),
                     (m_window.getSize().y / 2) - (((float)title.getLocalBounds().height / 2) * 3));
 
   std::ostringstream oss;
-  oss << "Killed: " << m_killCount;
+  oss << "Killed: " << m_score;
 
   // std::string killCountMsg = "Killed: " + m_killCount;
-  sf::Text killCount(oss.str(), m_font, m_config.font.size);
+  sf::Text killCount(oss.str(), m_font, m_config.font.sizeL);
   killCount.setPosition((m_window.getSize().x / 2) - ((float)killCount.getLocalBounds().width / 2),
                         (m_window.getSize().y / 2));
 
   m_window.draw(title);
+  m_window.draw(killCount);
+}
+
+void Game::renderScore()
+{
+  std::ostringstream oss;
+  oss << "SCORE: " << m_score;
+
+  sf::Text killCount(oss.str(), m_font, m_config.font.sizeM);
+  killCount.setPosition(10, 0); // TODO: find out why margins don't work as expected
+
   m_window.draw(killCount);
 }
 
@@ -367,19 +378,21 @@ void Game::renderEntities()
     if (e->tag() == "player")
     {
       e->cSprite->sprite.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+      // the following code makes the player character go tilting from side to side
       if (abs(e->cTransform->angle) >= m_maxPlayerAngle)
         m_angleTransform *= -1;
       e->cTransform->angle += m_angleTransform;
       e->cSprite->sprite.setRotation(e->cTransform->angle);
+      // then drawn to the window
       m_window.draw(e->cSprite->sprite);
     }
     else
     {
-      // std::cout << "Drawing " << e->tag() << " at: (" << e->cShape->circle.getPosition().x << ","
-      //           << e->cShape->circle.getPosition().y << ")" << std::endl;
+      // whilst this code makes other entities (all but player) spin around continuously
       e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
       e->cTransform->angle += 1.0f;
       e->cShape->circle.setRotation(e->cTransform->angle);
+      // and then drawn to the window as well
       m_window.draw(e->cShape->circle);
     }
   }
@@ -398,6 +411,7 @@ void Game::sRender()
     if (cursor.loadFromSystem(sf::Cursor::Cross))
       m_window.setMouseCursor(cursor);
 
+    renderScore();
     renderEntities();
   }
 
