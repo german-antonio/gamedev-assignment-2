@@ -68,10 +68,10 @@ class Game
   float m_maxPlayerAngle = 10.0f;
   float m_angleTransform = 0.5f;
   int m_score = 0;
+  int m_killCount = 0;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
   int m_lastPlayerBulletSpawnTime = 0;
-  int m_score = 0;
   bool m_paused = false;   // wether we update game logic
   bool m_running = true;   // wether the game is running
   bool m_gameOver = false; // wether the game is over
