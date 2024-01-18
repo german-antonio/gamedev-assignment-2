@@ -162,6 +162,8 @@ void Game::spawnEnemy()
   entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
   // Set collision component separately
   entity->cCollision = std::make_shared<CCollision>(m_config.enemy.shapeRadius + m_config.enemy.outlineThickness);
+  // Set score component based on generated points
+  entity->cScore = std::make_shared<CScore>(points);
 
   // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
   // TODO: entity->cShape = std::make_shared<CShape>(m_config.player.shapeRadius, m_config.player.V, ...);
@@ -292,7 +294,8 @@ void Game::sCollision()
     for (auto b : m_entities.getEntities("bullet"))
       if (collides(e->cTransform->pos, b->cTransform->pos, e->cCollision->radius + b->cCollision->radius))
       {
-        m_score++;
+        m_killCount++;
+        m_score += e->cScore->score;
         std::cout << "!! ENEMY KILLED. Remaining: (" << m_entities.getEntities("enemy").size() << ")" << std::endl;
         std::cout << "CURRENT KILL COUNT: [" << m_score << "]" << std::endl;
         e->destroy();
@@ -345,7 +348,7 @@ void Game::renderGameOver()
                     (m_window.getSize().y / 2) - (((float)title.getLocalBounds().height / 2) * 3));
 
   std::ostringstream oss;
-  oss << "Killed: " << m_score;
+  oss << "Killed: " << m_killCount << " | Score: " << m_score;
 
   // std::string killCountMsg = "Killed: " + m_killCount;
   sf::Text killCount(oss.str(), m_font, m_config.font.sizeL);
@@ -361,10 +364,10 @@ void Game::renderScore()
   std::ostringstream oss;
   oss << "SCORE: " << m_score;
 
-  sf::Text killCount(oss.str(), m_font, m_config.font.sizeM);
-  killCount.setPosition(10, 0); // TODO: find out why margins don't work as expected
+  sf::Text score(oss.str(), m_font, m_config.font.sizeM);
+  score.setPosition(10, 0); // TODO: find out why margins don't work as expected
 
-  m_window.draw(killCount);
+  m_window.draw(score);
 }
 
 void Game::renderEntities()
