@@ -33,7 +33,7 @@ struct PlayerConfig
 
 struct EnemyConfig
 {
-  int shapeRadius, collisionRadius, outlineThickness, minVertices, maxVertices, spawnInterval;
+  int shapeRadius, collisionRadius, outlineThickness, minVertices, maxVertices, spawnInterval, lifespan;
   sf::Color fillColor, outlineColor;
   float minSpeed, maxSpeed;
 };
@@ -87,7 +87,9 @@ class Game
   void reset();
   void spawnPlayer();
   void spawnEnemy();
-  void spawnSmallenemies(std::shared_ptr<Entity> entity);
+  void spawnEnemy(const int points, Vec2& pos, Vec2& originalVelocity, const float angle, const int radius,
+                  const sf::Color fillColor, const sf::Color outlineColor);
+  void spawnSmallEnemies(std::shared_ptr<Entity> entity);
   void spawnBullet(std::shared_ptr<Entity> entity, const Vec2& mousePos);
   void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
   void renderGameOver();
@@ -98,7 +100,7 @@ class Game
   void resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouseButton);
   void resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove);
   void resolveMouseButtonReleasedAction(sf::Event::MouseButtonEvent mouseButton);
-  bool collides(Vec2 pos1, Vec2 pos2, float totalRadius);
+  bool collides(const Vec2& pos1, const Vec2& pos2, const float totalRadius);
 
 public:
   Game(const std::string& config); // constructor, takes in game config
