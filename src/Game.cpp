@@ -79,7 +79,7 @@ void Game::setConfigFromFile(const std::string& path)
       m_config.enemy.shapeRadius >> m_config.enemy.collisionRadius >> m_config.enemy.minSpeed >> m_config.enemy.maxSpeed >>
       enemyFillR >> enemyFillG >> enemyFillB >> enemyOutlineR >> enemyOutlineG >> enemyOutlineB >>
       m_config.enemy.outlineThickness >> m_config.enemy.minVertices >> m_config.enemy.maxVertices >>
-      m_config.enemy.spawnInterval >>
+      m_config.enemy.spawnInterval >> m_config.enemy.lifespan >>
       // Bullet config
       m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >> bulletFillR >>
       bulletFillG >> bulletFillB >> bulletOutlineR >> bulletOutlineG >> bulletOutlineB >> m_config.bullet.outlineThickness >>
@@ -154,9 +154,11 @@ void Game::spawnEnemy()
   // set position
   Vec2 position(rndX, rndY);
   // generate random angle
-  float angle = (rand() % 361);
+  float angle = (rand() % 361) * M_PI / 180.0;
   // calculate velocity vector
   Vec2 velocity((speed * cos(angle)), (speed * sin(angle)));
+
+  std::cout << "REGULAR enemy has a velocity vector of (" << velocity.x << "," << velocity.y << ")" << std::endl;
 
   // Set transform component with above data
   entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
@@ -165,25 +167,54 @@ void Game::spawnEnemy()
   // Set score component based on generated points
   entity->cScore = std::make_shared<CScore>(points);
 
-  // The entity's shape will have a radius 16, 3 sides, blue fill, and white outline of thickness 4
-  // TODO: entity->cShape = std::make_shared<CShape>(m_config.player.shapeRadius, m_config.player.V, ...);
   sf::Color fillColor(randBetween(0, 255), randBetween(0, 255), randBetween(0, 255));
   sf::Color outlineColor(randBetween(0, 255), randBetween(0, 255), randBetween(0, 255));
   entity->cShape =
       std::make_shared<CShape>(m_config.enemy.shapeRadius, points, fillColor, outlineColor, m_config.enemy.outlineThickness);
-
-  // record when the most recent enemy was spawned
-  m_lastEnemySpawnTime = m_currentFrame;
 }
 
-void Game::spawnSmallenemies(std::shared_ptr<Entity> e)
+void Game::spawnEnemy(const int points, Vec2& pos, Vec2& originalVelocity, const float angle, const int radius,
+                      const sf::Color fillColor, const sf::Color outlineColor)
+{
+  auto entity = m_entities.addEntity("enemy");
+
+  // std::cout << "Enemy will be spawned at: (" << pos.x << "," << pos.y << ")" << std::endl;
+
+  const float speed = std::sqrt((originalVelocity.x * originalVelocity.x) + (originalVelocity.y * originalVelocity.y));
+
+  std::cout << "Calculated hypotenuse (speed) was " << speed << std::endl;
+
+  Vec2 velocity((speed * cos(angle)), (speed * sin(angle)));
+
+  std::cout << "Small enemy has a velocity vector of (" << velocity.x << "," << velocity.y << ")" << std::endl;
+
+  entity->cTransform = std::make_shared<CTransform>(pos, velocity, angle);
+  entity->cCollision = std::make_shared<CCollision>(radius + m_config.enemy.outlineThickness);
+  entity->cScore = std::make_shared<CScore>(points * 2);
+  entity->cLifespan = std::make_shared<CLifespan>(m_config.enemy.lifespan);
+  entity->cShape = std::make_shared<CShape>(radius, points, fillColor, outlineColor, m_config.enemy.outlineThickness);
+}
+
+void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 {
   // TODO: spawn small enemies at the location of the input enemy e
+  const int points = e->cShape->circle.getPointCount();
 
-  // when we create the smaller enemy, we have to read the values of the original enemy
-  // - spawn a number of small enemies equal to the vertices of the original enemy
-  // - set each small enemy to the same color as the original, half the size
-  // - small enemies are worth double points of the original enemy
+  // spawn a small enemy for every point the original enemy had
+  const float angleSize = (360 / points) * M_PI / 180.0f;
+
+  for (size_t i = 1; i <= points; i++)
+  {
+    Vec2 pos(e->cTransform->pos.x, e->cTransform->pos.y);
+    const float angle = i * angleSize;
+
+    std::cout << "Small enemy number " << i << " has an angle of " << angle << " angle size was:" << angleSize << std::endl;
+
+    const int radius = m_config.enemy.shapeRadius / 2;
+
+    spawnEnemy(points, pos, e->cTransform->velocity, angle, radius, e->cShape->circle.getFillColor(),
+               e->cShape->circle.getOutlineColor());
+  }
 }
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
@@ -262,7 +293,7 @@ void Game::sLifespan()
   }
 }
 
-bool Game::collides(Vec2 pos1, Vec2 pos2, float totalRadius)
+bool Game::collides(const Vec2& pos1, const Vec2& pos2, const float totalRadius)
 {
   Vec2 origin1(pos1.x, pos1.y);
   Vec2 origin2(pos2.x, pos2.y);
@@ -272,7 +303,7 @@ bool Game::collides(Vec2 pos1, Vec2 pos2, float totalRadius)
   float dist = (diff.x * diff.x) + (diff.y * diff.y);
 
   // if their distance is less than the sum of their radiuses, they are colliding
-  return dist < totalRadius * totalRadius;
+  return dist < (totalRadius * totalRadius);
 }
 
 void Game::sCollision()
@@ -296,8 +327,10 @@ void Game::sCollision()
       {
         m_killCount++;
         m_score += e->cScore->score;
-        std::cout << "!! ENEMY KILLED. Remaining: (" << m_entities.getEntities("enemy").size() << ")" << std::endl;
-        std::cout << "CURRENT KILL COUNT: [" << m_score << "]" << std::endl;
+        // std::cout << "!! ENEMY KILLED. Remaining: (" << m_entities.getEntities("enemy").size() << ")" << std::endl;
+        // std::cout << "CURRENT KILL COUNT: [" << m_score << "]" << std::endl;
+        if (e->cShape->circle.getRadius() == m_config.enemy.shapeRadius)
+          spawnSmallEnemies(e);
         e->destroy();
         b->destroy();
       }
@@ -315,7 +348,12 @@ void Game::sCollision()
 void Game::sEnemySpawner()
 {
   if ((m_currentFrame - m_lastEnemySpawnTime) >= m_config.enemy.spawnInterval)
+  {
     spawnEnemy();
+
+    // record when the most recent enemy was spawned
+    m_lastEnemySpawnTime = m_currentFrame;
+  }
 }
 
 void Game::sPlayerBulletSpawner()
