@@ -10,12 +10,12 @@ DONE - The player will shoot a bullet toward the mouse pointer when the left mou
   from the config file
 
 Special Ability
-- You are free to come up with your own special move which is fired by the player when the right mouse button is clicked. This special ability must:
-    - Multiple entities (bullets, etc) spawned by special weapon
-    - Entities have some unique graphic associated with them
-    - A unique game mechanic is introduced via a new component
-    - A 'cooldown timer' must be implemented for the special weapon
-  The properties of the special move are not in the config file
+You are free to come up with your own special move which is fired by the player when the right mouse button is clicked. This special ability must:
+  - Multiple entities (bullets, etc) spawned by special weapon
+  - Entities have some unique graphic associated with them
+  - A unique game mechanic is introduced via a new component
+  - A 'cooldown timer' must be implemented for the special weapon
+The properties of the special move are not in the config file
 
 Enemies
 DONE - Enemies will spawn in a random location on the screen every X frames, where X is defined in the configuration file.
@@ -32,7 +32,7 @@ DONE - When (large) enemies collide with a bullet or player, they are destroyed,
   (360 / 6) = 60 degrees. The smaller enemies must have a radius equal to half of the original entity.
 
 Score:
-- Each time an enemy spawns, it is given a score component of N*100, where N is the number of vertices it has. Small enemies get double this value.
+DONE - Each time an enemy spawns, it is given a score component of N*100, where N is the number of vertices it has. Small enemies get double this value.
 DONE - If a player bullet kills an enemy, the game score is increased by the score component of the enemy killed.
 DONE - The score should be displayed with the font specified by the config file in the top-left corner of the screen.
 
@@ -43,7 +43,7 @@ DONE - Any entity with a lifespan is currently alive, it should have its Color a
   The alpha should go from 255 when it is first spawned, to 0 on the last frame it is alive.
 
 Misc
-- The 'P' key should pause the game
+DONE - The 'SPACE' key should pause the game
 DONE - The 'ESC' key should close the game 
 
 DONE Configuration file
