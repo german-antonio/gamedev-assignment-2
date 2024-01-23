@@ -70,6 +70,7 @@ class Game
   int m_score = 0;
   int m_killCount = 0;
   int m_currentFrame = 0;
+  int m_currentActiveFrame = 0;
   int m_lastEnemySpawnTime = 0;
   int m_lastPlayerBulletSpawnTime = 0;
   bool m_paused = false;   // wether we update game logic

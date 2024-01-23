@@ -44,18 +44,24 @@ void Game::run()
 
     if (!m_gameOver)
     {
-      sEnemySpawner();
-      sPlayerBulletSpawner();
-      sLifespan();
-      sMovement();
-      sCollision();
-      sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
+      if (!m_paused)
+      {
+        sEnemySpawner();
+        sPlayerBulletSpawner();
+        sLifespan();
+        sMovement();
+        sCollision();
+        sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
+      }
     }
 
     sRender();
 
-    // increment the current frame
-    // may need to be moved when pause implemented
+    // increment the current active frame
+    if (!m_paused)
+      m_currentActiveFrame++;
+
+    // increment the current total frame
     m_currentFrame++;
   }
 }
@@ -197,19 +203,13 @@ void Game::spawnEnemy(const int points, Vec2& pos, Vec2& originalVelocity, const
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 {
-  // TODO: spawn small enemies at the location of the input enemy e
   const int points = e->cShape->circle.getPointCount();
-
-  // spawn a small enemy for every point the original enemy had
-  const float angleSize = (360 / points) * M_PI / 180.0f;
+  const float angleSize = (360 / points) * M_PI / 180.0f; // converted to radians
 
   for (size_t i = 1; i <= points; i++)
   {
     Vec2 pos(e->cTransform->pos.x, e->cTransform->pos.y);
     const float angle = i * angleSize;
-
-    std::cout << "Small enemy number " << i << " has an angle of " << angle << " angle size was:" << angleSize << std::endl;
-
     const int radius = m_config.enemy.shapeRadius / 2;
 
     spawnEnemy(points, pos, e->cTransform->velocity, angle, radius, e->cShape->circle.getFillColor(),
@@ -243,7 +243,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   bullet->cCollision = std::make_shared<CCollision>(m_config.bullet.collisionRadius);
   bullet->cLifespan = std::make_shared<CLifespan>(m_config.bullet.lifespan);
 
-  m_lastPlayerBulletSpawnTime = m_currentFrame;
+  m_lastPlayerBulletSpawnTime = m_currentActiveFrame;
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -270,7 +270,7 @@ void Game::sLifespan()
 {
   for (auto& e : m_entities.getEntities())
   {
-    //   if entity has no lifespan component, skip it
+    // if entity has no lifespan component, skip it
     if (!e->cLifespan)
       continue;
 
@@ -347,18 +347,18 @@ void Game::sCollision()
 
 void Game::sEnemySpawner()
 {
-  if ((m_currentFrame - m_lastEnemySpawnTime) >= m_config.enemy.spawnInterval)
+  if ((m_currentActiveFrame - m_lastEnemySpawnTime) >= m_config.enemy.spawnInterval)
   {
     spawnEnemy();
 
     // record when the most recent enemy was spawned
-    m_lastEnemySpawnTime = m_currentFrame;
+    m_lastEnemySpawnTime = m_currentActiveFrame;
   }
 }
 
 void Game::sPlayerBulletSpawner()
 {
-  if (m_player->cInput->shoot == true && (m_currentFrame - m_lastPlayerBulletSpawnTime) >= m_config.bullet.rate)
+  if (m_player->cInput->shoot == true && (m_currentActiveFrame - m_lastPlayerBulletSpawnTime) >= m_config.bullet.rate)
     spawnBullet(m_player, Vec2(m_lastMousePos.x, m_lastMousePos.y));
 }
 
@@ -512,7 +512,12 @@ void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
     break;
 
   case sf::Keyboard::R:
-    m_reset = true;
+    if (!m_paused)
+      m_reset = true;
+    break;
+
+  case sf::Keyboard::Space:
+    m_paused = !m_paused;
     break;
 
     // case sf::Keyboard::S:
