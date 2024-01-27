@@ -49,6 +49,16 @@ public:
   bool debug = false;
   CInput() {}
 };
+class CSpecial
+{
+public:
+  int duration = 300;  // frames
+  int cooldown = 1800; // frames
+  bool enabled = true;
+  bool active = false;
+  CSpecial() {}
+  CSpecial(int d, int cd) : duration(d), cooldown(cd) {}
+};
 class CLifespan
 {
 public:
