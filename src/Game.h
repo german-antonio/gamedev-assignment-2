@@ -26,7 +26,7 @@ struct FontConfig
 
 struct PlayerConfig
 {
-  int shapeRadius, collisionRadius, outlineThickness, vertices;
+  int shapeRadius, collisionRadius, outlineThickness, vertices, specialDuration, specialCooldown;
   sf::Color fillColor, outlineColor;
   float maxSpeed;
 };
@@ -73,6 +73,7 @@ class Game
   int m_currentActiveFrame = 0;
   int m_lastEnemySpawnTime = 0;
   int m_lastPlayerBulletSpawnTime = 0;
+  int m_lastPlayerSpecial = 0;
   bool m_paused = false;   // wether we update game logic
   bool m_running = true;   // wether the game is running
   bool m_gameOver = false; // wether the game is over
@@ -114,6 +115,7 @@ public:
   void sLifespan();             // System: Lifespan
   void sMovement();             // System: Entity position / movement update
   void sCollision();            // System: Collisions
+  void sSpecial();              // System: Special Ability
   void sUserInput();            // System: User Input
   void sUpdatePlayerVelocity(); // System: Update player velocity vector
   void sRender();               // System: Render / Drawing
