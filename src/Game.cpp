@@ -50,6 +50,7 @@ void Game::run()
         sPlayerBulletSpawner();
         sLifespan();
         sMovement();
+        sSpecial();
         sCollision();
         sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
       }
@@ -80,7 +81,7 @@ void Game::setConfigFromFile(const std::string& path)
       // Player config
       m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >> playerFillR >>
       playerFillG >> playerFillB >> playerOutlineR >> playerOutlineG >> playerOutlineB >> m_config.player.outlineThickness >>
-      m_config.player.vertices >>
+      m_config.player.vertices >> m_config.player.specialDuration >> m_config.player.specialCooldown >>
       // Enemy config
       m_config.enemy.shapeRadius >> m_config.enemy.collisionRadius >> m_config.enemy.minSpeed >> m_config.enemy.maxSpeed >>
       enemyFillR >> enemyFillG >> enemyFillB >> enemyOutlineR >> enemyOutlineG >> enemyOutlineB >>
@@ -113,8 +114,6 @@ void Game::reset()
 
 void Game::spawnPlayer()
 {
-  // TODO: Finish adding all properties of the player with the correct values from the config
-
   auto entity = m_entities.addEntity("player");
 
   float radius = m_config.player.collisionRadius;
@@ -129,13 +128,13 @@ void Game::spawnPlayer()
   // Set collision component separately
   entity->cCollision = std::make_shared<CCollision>(radius);
 
-  // The entity's shape will have a radius 32, 8 sides, dark grey fill, and red outline of thickness 4
-  // entity->cShape = std::make_shared<CShape>(m_config.player.shapeRadius, m_config.player.V, ...);
-  // entity->cShape = std::make_shared<CShape>(radius, points, sf::Color(10, 10, 10), sf::Color(255, 0, 0), thickness);
+  // Our player entity will be a sprite instead of a shape, exceptionally against the assignment
   entity->cSprite = std::make_shared<CSprite>("./assets/textures/Sam.png", radius * 2);
 
   // Add an input component to the player so that we can use inputs
   entity->cInput = std::make_shared<CInput>();
+  // Add the special ability component
+  entity->cSpecial = std::make_shared<CSpecial>(m_config.player.specialDuration, m_config.player.specialCooldown);
 
   // Since we want this Entity to be our player, set our Game's player variable to be this Entity
   // This goes slightly against the EntityManager paradigm, but we use the player so much it's worth it
@@ -424,6 +423,15 @@ void Game::renderEntities()
         m_angleTransform *= -1;
       e->cTransform->angle += m_angleTransform;
       e->cSprite->sprite.setRotation(e->cTransform->angle);
+      // TODO: consider checking this only if there's been changes, NOT every time
+      if (m_player->cSpecial->active)
+        // TODO: this is inefficient because we wil be loading textures on every frame
+        // consider loading all textures on game init, save them in memory, then use them accordingly
+        e->cSprite->texture.loadFromFile("./assets/textures/SamSpecial.png");
+      else
+        e->cSprite->texture.loadFromFile("./assets/textures/Sam.png");
+
+      e->cSprite->sprite.setTexture(e->cSprite->texture);
       // then drawn to the window
       m_window.draw(e->cSprite->sprite);
     }
@@ -457,6 +465,14 @@ void Game::sRender()
   }
 
   m_window.display();
+};
+
+void Game::sSpecial()
+{
+  if (m_player->cSpecial->active && m_currentActiveFrame - m_lastPlayerSpecial >= m_player->cSpecial->duration)
+    m_player->cSpecial->active = false;
+  if (!m_player->cSpecial->enabled && m_currentActiveFrame - m_lastPlayerSpecial >= m_player->cSpecial->cooldown)
+    m_player->cSpecial->enabled = true;
 };
 
 void Game::sUserInput()
@@ -583,7 +599,15 @@ void Game::resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
   }
 
   if (mouse.button == sf::Mouse::Right)
+  {
     std::cout << "Mouse R Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
+    if (m_player->cSpecial->enabled && !m_player->cSpecial->active)
+    {
+      m_player->cSpecial->active = true;
+      m_player->cSpecial->enabled = false;
+      m_lastPlayerSpecial = m_currentActiveFrame;
+    }
+  }
 }
 
 void Game::resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove)
