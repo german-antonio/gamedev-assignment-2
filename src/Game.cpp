@@ -33,9 +33,6 @@ void Game::init(const std::string& path)
 
 void Game::run()
 {
-  // TODO: add pause functionality in here
-  //       some systems should function while paused (e.g. rendering)
-  //       some systems shouldn't (e.g. movement, input)
   while (m_running)
   {
     m_entities.update();
@@ -265,6 +262,11 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
 {
   // TODO: implement your own special weapon
+  // spawn 6 entities
+  //   calculate their positions with segmented angles like small enemies 
+  //   give them lifespans using the same value as the special duration
+  //   the angle is always 1 plus the previous value
+  //   some how determine their movement so that the movement system knows what to do
 }
 
 void Game::sReset()
@@ -324,9 +326,6 @@ bool Game::collides(const Vec2& pos1, const Vec2& pos2, const float totalRadius)
 
 void Game::sCollision()
 {
-  // TODO: implement all proper collisions between entities
-  //       be sure to use the collision radius, NOT the shape radius
-
   for (auto e : m_entities.getEntities("enemy"))
   {
     // wether current enemy is colliding with player
