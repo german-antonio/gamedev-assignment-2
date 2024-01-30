@@ -72,7 +72,8 @@ void Game::setConfigFromFile(const std::string& path)
   std::ifstream fin(path);
   int fontR, fontG, fontB, playerFillR, playerFillG, playerFillB, playerOutlineR, playerOutlineG, playerOutlineB, enemyFillR,
       enemyFillG, enemyFillB, enemyOutlineR, enemyOutlineG, enemyOutlineB, bulletFillR, bulletFillG, bulletFillB,
-      bulletOutlineR, bulletOutlineG, bulletOutlineB;
+      bulletOutlineR, bulletOutlineG, bulletOutlineB, specialBulletFillR, specialBulletFillG, specialBulletFillB,
+      specialBulletOutlineR, specialBulletOutlineG, specialBulletOutlineB;
   fin >>
       // Window config
       m_config.window.width >> m_config.window.height >> m_config.window.frameLimit >> m_config.window.fullScreen >>
@@ -81,7 +82,8 @@ void Game::setConfigFromFile(const std::string& path)
       // Player config
       m_config.player.shapeRadius >> m_config.player.collisionRadius >> m_config.player.maxSpeed >> playerFillR >>
       playerFillG >> playerFillB >> playerOutlineR >> playerOutlineG >> playerOutlineB >> m_config.player.outlineThickness >>
-      m_config.player.vertices >> m_config.player.specialDuration >> m_config.player.specialCooldown >>
+      m_config.player.vertices >> m_config.player.special.duration >> m_config.player.special.cooldown >>
+      m_config.player.special.moveSpeed >>
       // Enemy config
       m_config.enemy.shapeRadius >> m_config.enemy.collisionRadius >> m_config.enemy.minSpeed >> m_config.enemy.maxSpeed >>
       enemyFillR >> enemyFillG >> enemyFillB >> enemyOutlineR >> enemyOutlineG >> enemyOutlineB >>
@@ -90,7 +92,9 @@ void Game::setConfigFromFile(const std::string& path)
       // Bullet config
       m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >> bulletFillR >>
       bulletFillG >> bulletFillB >> bulletOutlineR >> bulletOutlineG >> bulletOutlineB >> m_config.bullet.outlineThickness >>
-      m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate;
+      m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate >> m_config.player.special.bulletRate >>
+      m_config.player.special.bulletSpeed >> specialBulletFillR >> specialBulletFillG >> specialBulletFillB >>
+      specialBulletOutlineR >> specialBulletOutlineG >> specialBulletOutlineB;
 
   m_config.font.color = sf::Color(toUint8(fontR), toUint8(fontG), toUint8(fontB));
   m_config.player.fillColor = sf::Color(toUint8(playerFillR), toUint8(playerFillG), toUint8(playerFillB));
@@ -99,6 +103,10 @@ void Game::setConfigFromFile(const std::string& path)
   m_config.enemy.outlineColor = sf::Color(toUint8(enemyOutlineR), toUint8(enemyOutlineG), toUint8(enemyOutlineB));
   m_config.bullet.fillColor = sf::Color(toUint8(bulletFillR), toUint8(bulletFillG), toUint8(bulletFillB));
   m_config.bullet.outlineColor = sf::Color(toUint8(bulletOutlineR), toUint8(bulletOutlineG), toUint8(bulletOutlineB));
+  m_config.player.special.bulletFillColor =
+      sf::Color(toUint8(specialBulletFillR), toUint8(specialBulletFillG), toUint8(specialBulletFillB));
+  m_config.player.special.bulletOutlineColor =
+      sf::Color(toUint8(specialBulletOutlineR), toUint8(specialBulletOutlineG), toUint8(specialBulletOutlineB));
 }
 
 void Game::setPaused(bool paused) { m_paused = paused; }
@@ -134,7 +142,7 @@ void Game::spawnPlayer()
   // Add an input component to the player so that we can use inputs
   entity->cInput = std::make_shared<CInput>();
   // Add the special ability component
-  entity->cSpecial = std::make_shared<CSpecial>(m_config.player.specialDuration, m_config.player.specialCooldown);
+  entity->cSpecial = std::make_shared<CSpecial>(m_config.player.special.duration, m_config.player.special.cooldown);
 
   // Since we want this Entity to be our player, set our Game's player variable to be this Entity
   // This goes slightly against the EntityManager paradigm, but we use the player so much it's worth it
@@ -219,6 +227,10 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
 {
   auto bullet = m_entities.addEntity("bullet");
+  int bulletSpeed = m_config.bullet.speed;
+
+  if (m_player->cSpecial->active)
+    bulletSpeed = m_config.player.special.bulletSpeed;
 
   // so we have two vectors: playerPos and targetPos
   Vec2 playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
@@ -229,15 +241,20 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   // now we can use archtangent to get the angle
   float angle = atan2f(diff.y, diff.x);
   // calculate velocity vector
-  Vec2 velocity((m_config.bullet.speed * cos(angle)),
-                (m_config.bullet.speed * sin(angle))); // TODO: somewhow actually understand this
+  Vec2 velocity((bulletSpeed * cos(angle)), (bulletSpeed * sin(angle))); // TODO: somewhow actually understand this
+
+  sf::Color bulletFillColor = m_config.bullet.fillColor;
+  sf::Color bulletOutlineColor = m_config.bullet.outlineColor;
+
+  if (m_player->cSpecial->active)
+  {
+    bulletFillColor = m_config.player.special.bulletFillColor;
+    bulletOutlineColor = m_config.player.special.bulletOutlineColor;
+  }
 
   // Set transform component
-  bullet->cShape = std::make_shared<CShape>(
-      m_config.bullet.shapeRadius, m_config.bullet.vertices,
-      sf::Color(m_config.bullet.fillColor.r, m_config.bullet.fillColor.g, m_config.bullet.fillColor.b),
-      sf::Color(m_config.bullet.outlineColor.r, m_config.bullet.outlineColor.g, m_config.bullet.outlineColor.b),
-      m_config.bullet.outlineThickness);
+  bullet->cShape = std::make_shared<CShape>(m_config.bullet.shapeRadius, m_config.bullet.vertices, bulletFillColor,
+                                            bulletOutlineColor, m_config.bullet.outlineThickness);
   bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
   bullet->cCollision = std::make_shared<CCollision>(m_config.bullet.collisionRadius);
   bullet->cLifespan = std::make_shared<CLifespan>(m_config.bullet.lifespan);
@@ -357,25 +374,33 @@ void Game::sEnemySpawner()
 
 void Game::sPlayerBulletSpawner()
 {
-  if (m_player->cInput->shoot == true && (m_currentActiveFrame - m_lastPlayerBulletSpawnTime) >= m_config.bullet.rate)
+  int bulletRate = m_config.bullet.rate;
+
+  if (m_player->cSpecial->active)
+    bulletRate = m_config.player.special.bulletRate;
+
+  if (m_player->cInput->shoot == true && (m_currentActiveFrame - m_lastPlayerBulletSpawnTime) >= bulletRate)
     spawnBullet(m_player, Vec2(m_lastMousePos.x, m_lastMousePos.y));
 }
 
 void Game::sUpdatePlayerVelocity()
 {
   m_player->cTransform->velocity = {0, 0}; // TODO: make it deaccelerate like greenberry did
+  float playerSpeed = m_config.player.maxSpeed;
+  if (m_player->cSpecial->active)
+    playerSpeed = m_config.player.special.moveSpeed;
 
   if (m_player->cInput->up && (m_player->cTransform->pos.y - m_player->cCollision->radius) >= 0)
-    m_player->cTransform->velocity.y = -1 * m_config.player.maxSpeed;
+    m_player->cTransform->velocity.y = -1 * playerSpeed;
 
   if (m_player->cInput->down && (m_player->cTransform->pos.y + m_player->cCollision->radius) <= m_window.getSize().y)
-    m_player->cTransform->velocity.y = m_config.player.maxSpeed;
+    m_player->cTransform->velocity.y = playerSpeed;
 
   if (m_player->cInput->left && (m_player->cTransform->pos.x - m_player->cCollision->radius) >= 0)
-    m_player->cTransform->velocity.x = -1 * m_config.player.maxSpeed;
+    m_player->cTransform->velocity.x = -1 * playerSpeed;
 
   if (m_player->cInput->right && (m_player->cTransform->pos.x + m_player->cCollision->radius) <= m_window.getSize().x)
-    m_player->cTransform->velocity.x = m_config.player.maxSpeed;
+    m_player->cTransform->velocity.x = playerSpeed;
 }
 
 void Game::renderGameOver()
