@@ -24,9 +24,16 @@ struct FontConfig
   sf::Color color;
 };
 
+struct SpecialConfig
+{
+  int duration, cooldown, bulletRate;
+  float moveSpeed, bulletSpeed;
+  sf::Color bulletFillColor, bulletOutlineColor;
+};
 struct PlayerConfig
 {
-  int shapeRadius, collisionRadius, outlineThickness, vertices, specialDuration, specialCooldown;
+  SpecialConfig special;
+  int shapeRadius, collisionRadius, outlineThickness, vertices;
   sf::Color fillColor, outlineColor;
   float maxSpeed;
 };
