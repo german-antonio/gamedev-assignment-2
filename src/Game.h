@@ -26,7 +26,7 @@ struct FontConfig
 
 struct SpecialConfig
 {
-  int duration, cooldown, bulletRate;
+  int duration, cooldown, bulletRate, bulletShapeRadius, bulletCollisionRadius;
   float moveSpeed, bulletSpeed;
   sf::Color bulletFillColor, bulletOutlineColor;
 };
