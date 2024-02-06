@@ -1,0 +1,11 @@
+// WINDOW
+width height frameLimit fullscreen
+// FONT
+path sizeS sizeM sizeL R G B
+// PLAYER
+radius collRadius maxSpeed fillR fillG fillB outR outG outB outThickness vertices specialDuration specialCooldown specialMoveSpeed 
+// ENEMY
+radius collRadius minSpeed maxSpeed fillR fillG fillB outR outG outB outThickness minVertices maxVertices spawnInterval lifespan
+// BULLET
+radius collRadius speed fillR fillG fillB outR outG outB outThickness vertices lifespan rate
+specialRadius specialCollRadius specialRate specialSpeed specialFillR specialFillG specialFillB specialBulletOutR specialBulletOutG specialBulletOutB
