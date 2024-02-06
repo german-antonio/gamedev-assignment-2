@@ -46,10 +46,11 @@ void Game::run()
         sEnemySpawner();
         sPlayerBulletSpawner();
         sLifespan();
+        sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
         sMovement();
         sSpecial();
         sCollision();
-        sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
+        // sAcceleration();
       }
     }
 
@@ -89,9 +90,10 @@ void Game::setConfigFromFile(const std::string& path)
       // Bullet config
       m_config.bullet.shapeRadius >> m_config.bullet.collisionRadius >> m_config.bullet.speed >> bulletFillR >>
       bulletFillG >> bulletFillB >> bulletOutlineR >> bulletOutlineG >> bulletOutlineB >> m_config.bullet.outlineThickness >>
-      m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate >> m_config.player.special.bulletRate >>
-      m_config.player.special.bulletSpeed >> specialBulletFillR >> specialBulletFillG >> specialBulletFillB >>
-      specialBulletOutlineR >> specialBulletOutlineG >> specialBulletOutlineB;
+      m_config.bullet.vertices >> m_config.bullet.lifespan >> m_config.bullet.rate >>
+      m_config.player.special.bulletShapeRadius >> m_config.player.special.bulletCollisionRadius >>
+      m_config.player.special.bulletRate >> m_config.player.special.bulletSpeed >> specialBulletFillR >>
+      specialBulletFillG >> specialBulletFillB >> specialBulletOutlineR >> specialBulletOutlineG >> specialBulletOutlineB;
 
   m_config.font.color = sf::Color(toUint8(fontR), toUint8(fontG), toUint8(fontB));
   m_config.player.fillColor = sf::Color(toUint8(playerFillR), toUint8(playerFillG), toUint8(playerFillB));
@@ -224,10 +226,16 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
 {
   auto bullet = m_entities.addEntity("bullet");
+  int shapeRadius = m_config.bullet.shapeRadius;
+  int collisionRadius = m_config.bullet.collisionRadius;
   int bulletSpeed = m_config.bullet.speed;
 
   if (m_player->cSpecial->active)
+  {
+    shapeRadius = m_config.player.special.bulletShapeRadius;
+    collisionRadius = m_config.player.special.bulletCollisionRadius;
     bulletSpeed = m_config.player.special.bulletSpeed;
+  }
 
   // so we have two vectors: playerPos and targetPos
   Vec2 playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
@@ -250,10 +258,10 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   }
 
   // Set transform component
-  bullet->cShape = std::make_shared<CShape>(m_config.bullet.shapeRadius, m_config.bullet.vertices, bulletFillColor,
-                                            bulletOutlineColor, m_config.bullet.outlineThickness);
+  bullet->cShape = std::make_shared<CShape>(shapeRadius, m_config.bullet.vertices, bulletFillColor, bulletOutlineColor,
+                                            m_config.bullet.outlineThickness);
   bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
-  bullet->cCollision = std::make_shared<CCollision>(m_config.bullet.collisionRadius);
+  bullet->cCollision = std::make_shared<CCollision>(collisionRadius);
   bullet->cLifespan = std::make_shared<CLifespan>(m_config.bullet.lifespan);
 
   m_lastPlayerBulletSpawnTime = m_currentActiveFrame;
@@ -263,7 +271,7 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
 {
   // TODO: implement your own special weapon
   // spawn 6 entities
-  //   calculate their positions with segmented angles like small enemies 
+  //   calculate their positions with segmented angles like small enemies
   //   give them lifespans using the same value as the special duration
   //   the angle is always 1 plus the previous value
   //   some how determine their movement so that the movement system knows what to do
