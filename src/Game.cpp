@@ -46,11 +46,12 @@ void Game::run()
         sEnemySpawner();
         sPlayerBulletSpawner();
         sLifespan();
-        sUpdatePlayerVelocity(); // TODO: figure out if this is actually a good idea
+        sUpdatePlayerAcceleration();
+        sAcceleration();
+        sEdges();
         sMovement();
         sSpecial();
         sCollision();
-        // sAcceleration();
       }
     }
 
@@ -131,7 +132,11 @@ void Game::spawnPlayer()
   // spawn at the center
   float mx = m_window.getSize().x / 2.0f;
   float my = m_window.getSize().y / 2.0f;
-  entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
+  entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0, 0.0), Vec2(0.0f, 0.0f), Vec2(0.0f, 0.0f),
+                                                    Vec2(10.0f, 10.0f), Vec2(0.0f, 0.0f), Vec2(0.0f, 0.0f), 0.4f, 0.0f);
+
+  // Edge component is used to multiply velocity by this value when an edge is hit
+  entity->cEdge = std::make_shared<CEdge>(0);
   // Set collision component separately
   entity->cCollision = std::make_shared<CCollision>(radius);
 
@@ -174,6 +179,8 @@ void Game::spawnEnemy()
 
   // Set transform component with above data
   entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
+  // Edge component is used to multiply velocity by this value when an edge is hit
+  entity->cEdge = std::make_shared<CEdge>(-1);
   // Set collision component separately
   entity->cCollision = std::make_shared<CCollision>(m_config.enemy.shapeRadius + m_config.enemy.outlineThickness);
   // Set score component based on generated points
@@ -201,6 +208,7 @@ void Game::spawnEnemy(const int points, Vec2& pos, Vec2& originalVelocity, const
   std::cout << "Small enemy has a velocity vector of (" << velocity.x << "," << velocity.y << ")" << std::endl;
 
   entity->cTransform = std::make_shared<CTransform>(pos, velocity, angle);
+  entity->cEdge = std::make_shared<CEdge>(-1);
   entity->cCollision = std::make_shared<CCollision>(radius + m_config.enemy.outlineThickness);
   entity->cScore = std::make_shared<CScore>(points * 2);
   entity->cLifespan = std::make_shared<CLifespan>(m_config.enemy.lifespan);
@@ -283,10 +291,72 @@ void Game::sReset()
     reset();
 }
 
+void Game::sUpdatePlayerAcceleration()
+{
+  float step = m_player->cTransform->accelerationStep;
+  bool right = m_player->cInput->right;
+  bool down = m_player->cInput->down;
+  bool left = m_player->cInput->left;
+  bool up = m_player->cInput->up;
+
+  Vec2 acc(0.0f, 0.0f);
+
+  if (right)
+    acc.x += step;
+  if (down)
+    acc.y += step;
+  if (left)
+    acc.x -= step;
+  if (up)
+    acc.y -= step;
+
+  if ((!right && !left) || (right && left))
+    acc.x = -std::copysign(std::min(step, std::abs(m_player->cTransform->velocity.x)), m_player->cTransform->velocity.x);
+  if ((!up && !down) || (up && down))
+    acc.y = -std::copysign(std::min(step, std::abs(m_player->cTransform->velocity.y)), m_player->cTransform->velocity.y);
+
+  m_player->cTransform->acceleration = acc;
+}
+
+void Game::sAcceleration()
+{
+  for (auto& e : m_entities.getEntities())
+  {
+    if (!e->cTransform || e->cTransform->acceleration == Vec2(0.0, 0.0))
+      continue;
+
+    e->cTransform->velocity.x += e->cTransform->acceleration.x;
+    e->cTransform->velocity.y += e->cTransform->acceleration.y;
+
+    e->cTransform->velocity.x = std::clamp(e->cTransform->velocity.x, -(e->cTransform->maxVel.x), e->cTransform->maxVel.x);
+    e->cTransform->velocity.y = std::clamp(e->cTransform->velocity.y, -(e->cTransform->maxVel.y), e->cTransform->maxVel.y);
+  }
+}
+
+void Game::sEdges()
+{
+  for (auto& e : m_entities.getEntities())
+  {
+    if (!e->cEdge)
+      continue;
+
+    if (((e->cTransform->pos.x + e->cCollision->radius) >= m_window.getSize().x && e->cTransform->velocity.x > 0) ||
+        ((e->cTransform->pos.x - e->cCollision->radius) <= 0 && e->cTransform->velocity.x < 0))
+      e->cTransform->velocity.x *= e->cEdge->factor;
+
+    if (((e->cTransform->pos.y + e->cCollision->radius) >= m_window.getSize().y && e->cTransform->velocity.y > 0) ||
+        ((e->cTransform->pos.y - e->cCollision->radius) <= 0 && e->cTransform->velocity.y < 0))
+      e->cTransform->velocity.y *= e->cEdge->factor;
+  }
+}
+
 void Game::sMovement()
 {
   for (auto& e : m_entities.getEntities())
   {
+    if (!e->cTransform || e->cTransform->velocity == Vec2(0.0, 0.0))
+      continue;
+
     e->cTransform->pos.x += e->cTransform->velocity.x;
     e->cTransform->pos.y += e->cTransform->velocity.y;
   }
@@ -357,14 +427,6 @@ void Game::sCollision()
         e->destroy();
         b->destroy();
       }
-
-    // wether current enemy is hitting an edge
-    if (e->cTransform->pos.x <= e->cCollision->radius ||
-        e->cTransform->pos.x + e->cCollision->radius >= m_window.getSize().x)
-      e->cTransform->velocity.x *= -1;
-    if (e->cTransform->pos.y <= e->cCollision->radius ||
-        e->cTransform->pos.y + e->cCollision->radius >= m_window.getSize().y)
-      e->cTransform->velocity.y *= -1;
   }
 }
 
@@ -388,26 +450,6 @@ void Game::sPlayerBulletSpawner()
 
   if (m_player->cInput->shoot == true && (m_currentActiveFrame - m_lastPlayerBulletSpawnTime) >= bulletRate)
     spawnBullet(m_player, Vec2(m_lastMousePos.x, m_lastMousePos.y));
-}
-
-void Game::sUpdatePlayerVelocity()
-{
-  m_player->cTransform->velocity = {0, 0}; // TODO: make it deaccelerate like greenberry did
-  float playerSpeed = m_config.player.maxSpeed;
-  if (m_player->cSpecial->active)
-    playerSpeed = m_config.player.special.moveSpeed;
-
-  if (m_player->cInput->up && (m_player->cTransform->pos.y - m_player->cCollision->radius) >= 0)
-    m_player->cTransform->velocity.y = -1 * playerSpeed;
-
-  if (m_player->cInput->down && (m_player->cTransform->pos.y + m_player->cCollision->radius) <= m_window.getSize().y)
-    m_player->cTransform->velocity.y = playerSpeed;
-
-  if (m_player->cInput->left && (m_player->cTransform->pos.x - m_player->cCollision->radius) >= 0)
-    m_player->cTransform->velocity.x = -1 * playerSpeed;
-
-  if (m_player->cInput->right && (m_player->cTransform->pos.x + m_player->cCollision->radius) <= m_window.getSize().x)
-    m_player->cTransform->velocity.x = playerSpeed;
 }
 
 void Game::renderGameOver()
