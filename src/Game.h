@@ -116,14 +116,16 @@ public:
   void run();
 
   /* Game Systems */
-  void sReset();                // System: Reset the game
-  void sEnemySpawner();         // System: Spawn Enemies
-  void sPlayerBulletSpawner();  // System: Spawn Player Bullets
-  void sLifespan();             // System: Lifespan
-  void sMovement();             // System: Entity position / movement update
-  void sCollision();            // System: Collisions
-  void sSpecial();              // System: Special Ability
-  void sUserInput();            // System: User Input
-  void sUpdatePlayerVelocity(); // System: Update player velocity vector
-  void sRender();               // System: Render / Drawing
+  void sReset();                    // System: Reset the game
+  void sEnemySpawner();             // System: Spawn Enemies
+  void sPlayerBulletSpawner();      // System: Spawn Player Bullets
+  void sLifespan();                 // System: Lifespan
+  void sUpdatePlayerAcceleration(); // System: Update player acceleration vector
+  void sAcceleration();             // System: Update entities velocity vector
+  void sEdges();                    // System: Handles entities reaching edges
+  void sMovement();                 // System: Entity position / movement update
+  void sCollision();                // System: Collisions
+  void sSpecial();                  // System: Special Ability
+  void sUserInput();                // System: User Input
+  void sRender();                   // System: Render / Drawing
 };
