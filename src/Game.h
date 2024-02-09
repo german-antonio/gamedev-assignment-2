@@ -99,8 +99,9 @@ class Game
   void spawnEnemy(const int points, Vec2& pos, Vec2& originalVelocity, const float angle, const int radius,
                   const sf::Color fillColor, const sf::Color outlineColor);
   void spawnSmallEnemies(std::shared_ptr<Entity> entity);
-  void spawnBullet(std::shared_ptr<Entity> entity, const Vec2& mousePos);
-  void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
+  void spawnBullet(const Vec2& mousePos);
+  void spawnSpecialBullet(const Vec2& pos);
+  void activateSpecial();
   void renderGameOver();
   void renderScore();
   void renderEntities();
