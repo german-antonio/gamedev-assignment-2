@@ -10,6 +10,7 @@ using namespace Utils;
 
 Game::Game(const std::string& config) { init(config); }
 
+/** Initializes the game */
 void Game::init(const std::string& path)
 {
   // read and set game configuration from config file
@@ -20,17 +21,15 @@ void Game::init(const std::string& path)
     exit(-1);
   }
 
-  // seed the random number generator with current time on game initialization
-  srand(time(NULL));
+  srand(time(NULL)); // seed the random number generator with current time on game init
 
-  // set game window
   m_window.create(sf::VideoMode(m_config.window.width, m_config.window.height), "Assignment II");
   m_window.setFramerateLimit(m_config.window.frameLimit);
 
-  // spawn the player character
   spawnPlayer();
 }
 
+/** Main game loop, runs on every frame */
 void Game::run()
 {
   while (m_running)
@@ -66,6 +65,7 @@ void Game::run()
   }
 }
 
+/** Read the contents of the config file and assings each value to the global config variables */
 void Game::setConfigFromFile(const std::string& path)
 {
   std::ifstream fin(path);
@@ -109,8 +109,10 @@ void Game::setConfigFromFile(const std::string& path)
       sf::Color(toUint8(specialBulletOutlineR), toUint8(specialBulletOutlineG), toUint8(specialBulletOutlineB));
 }
 
+/** Sets pause flag */
 void Game::setPaused(bool paused) { m_paused = paused; }
 
+/** Resets the whole game */
 void Game::reset()
 {
   m_reset = false;
@@ -120,15 +122,13 @@ void Game::reset()
   spawnPlayer();
 }
 
+/** Spawns the player entity with all of its components and assign it to a global m_player variable */
 void Game::spawnPlayer()
 {
   auto entity = m_entities.addEntity("player");
 
   float radius = m_config.player.collisionRadius;
-  // float thickness = 4.0f;
-  // float points = 8;
 
-  // Give this entity a transform so it spawns at (200,200) with velocity (0,0) and angle 0
   // spawn at the center
   float mx = m_window.getSize().x / 2.0f;
   float my = m_window.getSize().y / 2.0f;
@@ -153,11 +153,11 @@ void Game::spawnPlayer()
   m_player = entity;
 }
 
+/** Spawns an enemy entity with randomized characteristics */
 void Game::spawnEnemy()
 {
   auto entity = m_entities.addEntity("enemy");
 
-  // spawn at random point
   int offset = m_config.enemy.shapeRadius + m_config.enemy.outlineThickness;
   int maxX = m_window.getSize().x - offset;
   int maxY = m_window.getSize().y - offset;
@@ -168,22 +168,15 @@ void Game::spawnEnemy()
 
   std::cout << "Enemy will be spawned at: (" << rndX << "," << rndY << ")" << std::endl;
 
-  // set position
   Vec2 position(rndX, rndY);
-  // generate random angle
   float angle = (rand() % 361) * M_PI / 180.0;
-  // calculate velocity vector
   Vec2 velocity((speed * cos(angle)), (speed * sin(angle)));
 
-  std::cout << "REGULAR enemy has a velocity vector of (" << velocity.x << "," << velocity.y << ")" << std::endl;
+  // std::cout << "REGULAR enemy has a velocity vector of (" << velocity.x << "," << velocity.y << ")" << std::endl;
 
-  // Set transform component with above data
   entity->cTransform = std::make_shared<CTransform>(position, velocity, angle);
-  // Edge component is used to multiply velocity by this value when an edge is hit
   entity->cEdge = std::make_shared<CEdge>(-1);
-  // Set collision component separately
   entity->cCollision = std::make_shared<CCollision>(m_config.enemy.shapeRadius + m_config.enemy.outlineThickness);
-  // Set score component based on generated points
   entity->cScore = std::make_shared<CScore>(points);
 
   sf::Color fillColor(randBetween(0, 255), randBetween(0, 255), randBetween(0, 255));
@@ -192,20 +185,14 @@ void Game::spawnEnemy()
       std::make_shared<CShape>(m_config.enemy.shapeRadius, points, fillColor, outlineColor, m_config.enemy.outlineThickness);
 }
 
+/** Alternative enemy spawner used to spawn a smaller enemy based on a regular enemy data (non-random) */
 void Game::spawnEnemy(const int points, Vec2& pos, Vec2& originalVelocity, const float angle, const int radius,
                       const sf::Color fillColor, const sf::Color outlineColor)
 {
   auto entity = m_entities.addEntity("enemy");
 
-  // std::cout << "Enemy will be spawned at: (" << pos.x << "," << pos.y << ")" << std::endl;
-
   const float speed = std::sqrt((originalVelocity.x * originalVelocity.x) + (originalVelocity.y * originalVelocity.y));
-
-  std::cout << "Calculated hypotenuse (speed) was " << speed << std::endl;
-
   Vec2 velocity((speed * cos(angle)), (speed * sin(angle)));
-
-  std::cout << "Small enemy has a velocity vector of (" << velocity.x << "," << velocity.y << ")" << std::endl;
 
   entity->cTransform = std::make_shared<CTransform>(pos, velocity, angle);
   entity->cEdge = std::make_shared<CEdge>(-1);
@@ -215,6 +202,7 @@ void Game::spawnEnemy(const int points, Vec2& pos, Vec2& originalVelocity, const
   entity->cShape = std::make_shared<CShape>(radius, points, fillColor, outlineColor, m_config.enemy.outlineThickness);
 }
 
+/** Spawns all the smaller enemies at the appropriate angles */
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 {
   const int points = e->cShape->circle.getPointCount();
@@ -231,6 +219,7 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
   }
 }
 
+/** Spawns a bullet entity with a fixed trajectory towards given target coordinates */
 void Game::spawnBullet(const Vec2& target)
 {
   auto bullet = m_entities.addEntity("bullet");
@@ -245,16 +234,10 @@ void Game::spawnBullet(const Vec2& target)
     bulletSpeed = m_config.player.special.bulletSpeed;
   }
 
-  // so we have two vectors: playerPos and targetPos
-  Vec2 playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
-  Vec2 targetPos(target.x, target.y);
-
-  // we need to get the difference (distance) between both vectors
-  Vec2 diff = targetPos - playerPos;
-  // now we can use archtangent to get the angle
+  Vec2 diff = target - m_player->cTransform->pos;
   float angle = atan2f(diff.y, diff.x);
-  // calculate velocity vector
   Vec2 velocity((bulletSpeed * cos(angle)), (bulletSpeed * sin(angle))); // TODO: somewhow actually understand this
+  // DONE, hypot * cos(angle) is the formula to get adjacent leg, sin() for opposite leg
 
   sf::Color bulletFillColor = m_config.bullet.fillColor;
   sf::Color bulletOutlineColor = m_config.bullet.outlineColor;
@@ -265,21 +248,21 @@ void Game::spawnBullet(const Vec2& target)
     bulletOutlineColor = m_config.player.special.bulletOutlineColor;
   }
 
-  // Set transform component
   bullet->cShape = std::make_shared<CShape>(shapeRadius, m_config.bullet.vertices, bulletFillColor, bulletOutlineColor,
                                             m_config.bullet.outlineThickness);
-  bullet->cTransform = std::make_shared<CTransform>(playerPos, velocity, angle);
+  bullet->cTransform = std::make_shared<CTransform>(m_player->cTransform->pos, velocity, angle);
   bullet->cCollision = std::make_shared<CCollision>(collisionRadius);
   bullet->cLifespan = std::make_shared<CLifespan>(m_config.bullet.lifespan);
 
   m_lastPlayerBulletSpawnTime = m_currentActiveFrame;
 }
 
+/** Spawns a special bullet entity at a given position that persists (is not destroyed on collision) */
 void Game::spawnSpecialBullet(const Vec2& pos)
 {
   auto specialBullet = m_entities.addEntity("bullet");
-  int shapeRadius = m_config.bullet.shapeRadius;
-  int collisionRadius = m_config.bullet.collisionRadius;
+  int shapeRadius = m_config.player.special.bulletShapeRadius;
+  int collisionRadius = m_config.player.special.bulletCollisionRadius;
   Vec2 velocity(0.0f, 0.0f);
   Vec2 maxVel(10.0f, 10.0f);
   Vec2 minVel(0.0, 0.0);
@@ -297,12 +280,13 @@ void Game::spawnSpecialBullet(const Vec2& pos)
   specialBullet->cLifespan = std::make_shared<CLifespan>(m_config.player.special.duration);
 }
 
+/** Activates special ability and spawns special bullets */
 void Game::activateSpecial()
 {
   m_player->cSpecial->active = true;
   m_player->cSpecial->enabled = false;
 
-  const int bulletsNumber = 20;
+  const int bulletsNumber = 5;
   const float angleStep = (360 / bulletsNumber) * M_PI / 180.0f; // converted to radians
   const int radius = 50;
 
@@ -316,12 +300,14 @@ void Game::activateSpecial()
   m_lastPlayerSpecial = m_currentActiveFrame;
 }
 
+/**  System that checks reset flag in order to reset the game */
 void Game::sReset()
 {
   if (m_reset)
     reset();
 }
 
+/** System that updates the player entity's acceleration values based on user input flags */
 void Game::sUpdatePlayerAcceleration()
 {
   float step = m_player->cTransform->accelerationStep;
@@ -349,6 +335,7 @@ void Game::sUpdatePlayerAcceleration()
   m_player->cTransform->acceleration = acc;
 }
 
+/** System that adds all accelerated entities current acceleration to their velocities, within boundaries */
 void Game::sAcceleration()
 {
   for (auto& e : m_entities.getEntities())
@@ -363,6 +350,7 @@ void Game::sAcceleration()
   }
 }
 
+/** System that checks whether entities with Edge component are hitting edges, updates their velocity accordingly */
 void Game::sEdges()
 {
   for (auto& e : m_entities.getEntities())
@@ -379,6 +367,7 @@ void Game::sEdges()
   }
 }
 
+/** System that adds all entities with velocity vectors values to their positions */
 void Game::sMovement()
 {
   for (auto& e : m_entities.getEntities())
@@ -391,6 +380,7 @@ void Game::sMovement()
   }
 }
 
+/** System that fades out all entities with a Lifespan component and destroys them when it runs out */
 void Game::sLifespan()
 {
   for (auto& e : m_entities.getEntities())
@@ -417,17 +407,15 @@ void Game::sLifespan()
   }
 }
 
+/** Wether two position vectors are colliding with each other */
 bool Game::collides(const Vec2& pos1, const Vec2& pos2, const float totalRadius)
 {
-  Vec2 origin1(pos1.x, pos1.y);
-  Vec2 origin2(pos2.x, pos2.y);
-  Vec2 diff = origin1 - origin2;
+  Vec2 diff = pos1 - pos2;
   float dist = (diff.x * diff.x) + (diff.y * diff.y);
-
-  // if their distance is less than the sum of their radiuses, they are colliding
   return dist < (totalRadius * totalRadius);
 }
 
+/** System that checks collisions between enemies and bullets, and enemies and the player */
 void Game::sCollision()
 {
   for (auto e : m_entities.getEntities("enemy"))
@@ -455,6 +443,7 @@ void Game::sCollision()
   }
 }
 
+/** System that spawns enemies every given interval */
 void Game::sEnemySpawner()
 {
   if ((m_currentActiveFrame - m_lastEnemySpawnTime) >= m_config.enemy.spawnInterval)
@@ -464,6 +453,7 @@ void Game::sEnemySpawner()
   }
 }
 
+/** System that spawns player bullets based on input flag */
 void Game::sPlayerBulletSpawner()
 {
   int bulletRate = m_config.bullet.rate;
@@ -475,6 +465,7 @@ void Game::sPlayerBulletSpawner()
     spawnBullet(Vec2(m_lastMousePos.x, m_lastMousePos.y));
 }
 
+/** Render the game over screen with score data */
 void Game::renderGameOver()
 {
   sf::Text title("Game Over", m_font, m_config.font.sizeL);
@@ -492,6 +483,7 @@ void Game::renderGameOver()
   m_window.draw(killCount);
 }
 
+/** Render current score to the screen */
 void Game::renderScore()
 {
   std::ostringstream oss;
@@ -503,6 +495,7 @@ void Game::renderScore()
   m_window.draw(score);
 }
 
+/** Render all entities */
 void Game::renderEntities()
 {
   for (auto& e : m_entities.getEntities())
@@ -528,7 +521,6 @@ void Game::renderEntities()
         e->cSprite->texture.loadFromFile("./assets/textures/Sam.png");
 
       e->cSprite->sprite.setTexture(e->cSprite->texture);
-      // then drawn to the window
       m_window.draw(e->cSprite->sprite);
     }
     else
@@ -537,12 +529,12 @@ void Game::renderEntities()
       e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
       e->cTransform->angle += 1.0f;
       e->cShape->circle.setRotation(e->cTransform->angle);
-      // and then drawn to the window as well
       m_window.draw(e->cShape->circle);
     }
   }
 }
 
+/** System that renders what needs to be rendered depending on game state flags */
 void Game::sRender()
 {
   m_window.clear();
@@ -563,6 +555,7 @@ void Game::sRender()
   m_window.display();
 };
 
+/** System that checks and updates special ability activation and enabling values */
 void Game::sSpecial()
 {
   if (m_player->cSpecial->active && m_currentActiveFrame - m_lastPlayerSpecial >= m_player->cSpecial->duration)
@@ -571,6 +564,7 @@ void Game::sSpecial()
     m_player->cSpecial->enabled = true;
 };
 
+/** System that reads and resolves user input */
 void Game::sUserInput()
 {
   sf::Event event;
@@ -599,6 +593,7 @@ void Game::sUserInput()
   }
 }
 
+/** Resolves appropriate actions based on given pressed key */
 void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
 {
   switch (key)
@@ -650,6 +645,7 @@ void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
   }
 }
 
+/** Resolves appropriate actions based on given released key */
 void Game::resolveKeyReleasedAction(sf::Keyboard::Key key)
 {
   std::cout << "Key released with code = " << key << std::endl;
@@ -681,6 +677,7 @@ void Game::resolveKeyReleasedAction(sf::Keyboard::Key key)
   }
 }
 
+/** Resolves appropriate actions based on given pressed mouse button */
 void Game::resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
 {
   if (mouse.button == sf::Mouse::Left)
@@ -698,12 +695,14 @@ void Game::resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
   }
 }
 
+/** Resolves appropriate actions based on mouse movement */
 void Game::resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove)
 {
   if (m_player->cInput->shoot == true)
     m_lastMousePos = Vec2(mouseMove.x, mouseMove.y);
 }
 
+/** Resolves appropriate actions based on given released mouse button */
 void Game::resolveMouseButtonReleasedAction(sf::Event::MouseButtonEvent mouse)
 {
   if (mouse.button == sf::Mouse::Left)
