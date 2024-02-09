@@ -132,8 +132,8 @@ void Game::spawnPlayer()
   // spawn at the center
   float mx = m_window.getSize().x / 2.0f;
   float my = m_window.getSize().y / 2.0f;
-  entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0, 0.0), Vec2(0.0f, 0.0f), Vec2(0.0f, 0.0f),
-                                                    Vec2(10.0f, 10.0f), Vec2(0.0f, 0.0f), Vec2(0.0f, 0.0f), 0.4f, 0.0f);
+  entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), Vec2(10.0f, 10.0f), Vec2(0.0f, 0.0f),
+                                                    Vec2(0.0f, 0.0f), 0.4f, 0.0f);
 
   // Edge component is used to multiply velocity by this value when an edge is hit
   entity->cEdge = std::make_shared<CEdge>(0);
@@ -231,7 +231,7 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
   }
 }
 
-void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
+void Game::spawnBullet(const Vec2& target)
 {
   auto bullet = m_entities.addEntity("bullet");
   int shapeRadius = m_config.bullet.shapeRadius;
@@ -275,14 +275,45 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2& target)
   m_lastPlayerBulletSpawnTime = m_currentActiveFrame;
 }
 
-void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
+void Game::spawnSpecialBullet(const Vec2& pos)
 {
-  // TODO: implement your own special weapon
-  // spawn 6 entities
-  //   calculate their positions with segmented angles like small enemies
-  //   give them lifespans using the same value as the special duration
-  //   the angle is always 1 plus the previous value
-  //   some how determine their movement so that the movement system knows what to do
+  auto specialBullet = m_entities.addEntity("bullet");
+  int shapeRadius = m_config.bullet.shapeRadius;
+  int collisionRadius = m_config.bullet.collisionRadius;
+  Vec2 velocity(0.0f, 0.0f);
+  Vec2 maxVel(10.0f, 10.0f);
+  Vec2 minVel(0.0, 0.0);
+  Vec2 acceleration(0.0f, 0.0f);
+  float step = 0.0f;
+  float angle = 0.0f;
+
+  sf::Color bulletFillColor = m_config.player.special.bulletFillColor;
+  sf::Color bulletOutlineColor = m_config.player.special.bulletOutlineColor;
+
+  specialBullet->cShape = std::make_shared<CShape>(shapeRadius, m_config.bullet.vertices, bulletFillColor,
+                                                   bulletOutlineColor, m_config.bullet.outlineThickness);
+  specialBullet->cTransform = std::make_shared<CTransform>(pos, velocity, maxVel, minVel, acceleration, step, angle);
+  specialBullet->cCollision = std::make_shared<CCollision>(collisionRadius, true);
+  specialBullet->cLifespan = std::make_shared<CLifespan>(m_config.player.special.duration);
+}
+
+void Game::activateSpecial()
+{
+  m_player->cSpecial->active = true;
+  m_player->cSpecial->enabled = false;
+
+  const int bulletsNumber = 20;
+  const float angleStep = (360 / bulletsNumber) * M_PI / 180.0f; // converted to radians
+  const int radius = 50;
+
+  for (size_t i = 1; i <= bulletsNumber; i++)
+  {
+    const float angle = i * angleStep;
+    Vec2 pos(m_player->cTransform->pos.x + radius * cos(angle), m_player->cTransform->pos.y + radius * sin(angle));
+    spawnSpecialBullet(pos);
+  }
+
+  m_lastPlayerSpecial = m_currentActiveFrame;
 }
 
 void Game::sReset()
@@ -326,9 +357,8 @@ void Game::sAcceleration()
       continue;
 
     e->cTransform->velocity.x += e->cTransform->acceleration.x;
-    e->cTransform->velocity.y += e->cTransform->acceleration.y;
-
     e->cTransform->velocity.x = std::clamp(e->cTransform->velocity.x, -(e->cTransform->maxVel.x), e->cTransform->maxVel.x);
+    e->cTransform->velocity.y += e->cTransform->acceleration.y;
     e->cTransform->velocity.y = std::clamp(e->cTransform->velocity.y, -(e->cTransform->maxVel.y), e->cTransform->maxVel.y);
   }
 }
@@ -343,7 +373,6 @@ void Game::sEdges()
     if (((e->cTransform->pos.x + e->cCollision->radius) >= m_window.getSize().x && e->cTransform->velocity.x > 0) ||
         ((e->cTransform->pos.x - e->cCollision->radius) <= 0 && e->cTransform->velocity.x < 0))
       e->cTransform->velocity.x *= e->cEdge->factor;
-
     if (((e->cTransform->pos.y + e->cCollision->radius) >= m_window.getSize().y && e->cTransform->velocity.y > 0) ||
         ((e->cTransform->pos.y - e->cCollision->radius) <= 0 && e->cTransform->velocity.y < 0))
       e->cTransform->velocity.y *= e->cEdge->factor;
@@ -366,14 +395,13 @@ void Game::sLifespan()
 {
   for (auto& e : m_entities.getEntities())
   {
-    // if entity has no lifespan component, skip it
     if (!e->cLifespan)
       continue;
 
     if (e->cLifespan->remaining > 0)
     {
       e->cLifespan->remaining -= 1;
-      if (e->cLifespan && e->isActive())
+      if (e->isActive())
       {
         sf::Color fill(e->cShape->circle.getFillColor());
         sf::Color outline(e->cShape->circle.getOutlineColor());
@@ -393,9 +421,7 @@ bool Game::collides(const Vec2& pos1, const Vec2& pos2, const float totalRadius)
 {
   Vec2 origin1(pos1.x, pos1.y);
   Vec2 origin2(pos2.x, pos2.y);
-
   Vec2 diff = origin1 - origin2;
-
   float dist = (diff.x * diff.x) + (diff.y * diff.y);
 
   // if their distance is less than the sum of their radiuses, they are colliding
@@ -420,12 +446,11 @@ void Game::sCollision()
       {
         m_killCount++;
         m_score += e->cScore->score;
-        // std::cout << "!! ENEMY KILLED. Remaining: (" << m_entities.getEntities("enemy").size() << ")" << std::endl;
-        // std::cout << "CURRENT KILL COUNT: [" << m_score << "]" << std::endl;
         if (e->cShape->circle.getRadius() == m_config.enemy.shapeRadius)
           spawnSmallEnemies(e);
         e->destroy();
-        b->destroy();
+        if (!b->cCollision->persist)
+          b->destroy();
       }
   }
 }
@@ -435,8 +460,6 @@ void Game::sEnemySpawner()
   if ((m_currentActiveFrame - m_lastEnemySpawnTime) >= m_config.enemy.spawnInterval)
   {
     spawnEnemy();
-
-    // record when the most recent enemy was spawned
     m_lastEnemySpawnTime = m_currentActiveFrame;
   }
 }
@@ -449,7 +472,7 @@ void Game::sPlayerBulletSpawner()
     bulletRate = m_config.player.special.bulletRate;
 
   if (m_player->cInput->shoot == true && (m_currentActiveFrame - m_lastPlayerBulletSpawnTime) >= bulletRate)
-    spawnBullet(m_player, Vec2(m_lastMousePos.x, m_lastMousePos.y));
+    spawnBullet(Vec2(m_lastMousePos.x, m_lastMousePos.y));
 }
 
 void Game::renderGameOver()
@@ -461,7 +484,6 @@ void Game::renderGameOver()
   std::ostringstream oss;
   oss << "Killed: " << m_killCount << " | Score: " << m_score;
 
-  // std::string killCountMsg = "Killed: " + m_killCount;
   sf::Text killCount(oss.str(), m_font, m_config.font.sizeL);
   killCount.setPosition((m_window.getSize().x / 2) - ((float)killCount.getLocalBounds().width / 2),
                         (m_window.getSize().y / 2));
@@ -610,10 +632,6 @@ void Game::resolveKeyPressedAction(sf::Keyboard::Key key)
     m_paused = !m_paused;
     break;
 
-    // case sf::Keyboard::S:
-    //   stop(true);
-    //   break;
-
   case sf::Keyboard::X:
     m_gameOver = true;
     break;
@@ -676,18 +694,13 @@ void Game::resolveMouseButtonPressedAction(sf::Event::MouseButtonEvent mouse)
   {
     std::cout << "Mouse R Clicked at (" << mouse.x << "," << mouse.y << ")" << std::endl;
     if (m_player->cSpecial->enabled && !m_player->cSpecial->active)
-    {
-      m_player->cSpecial->active = true;
-      m_player->cSpecial->enabled = false;
-      m_lastPlayerSpecial = m_currentActiveFrame;
-    }
+      activateSpecial();
   }
 }
 
 void Game::resolveMouseMoveAction(sf::Event::MouseMoveEvent mouseMove)
 {
   if (m_player->cInput->shoot == true)
-    // std::cout << "Moved mouse shooting, target POS (" << mouseMove.x << "," << mouseMove.y << ")" << std::endl;
     m_lastMousePos = Vec2(mouseMove.x, mouseMove.y);
 }
 
