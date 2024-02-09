@@ -9,8 +9,6 @@ class CTransform
 public:
   // Position
   Vec2 pos = {0.0, 0.0};
-  Vec2 maxPos = {0.0, 0.0};
-  Vec2 minPos = {0.0, 0.0};
   // Velocity
   Vec2 velocity = {0.0, 0.0};
   Vec2 maxVel = {0.0, 0.0};
@@ -22,10 +20,8 @@ public:
   float angle = 0;
 
   CTransform(const Vec2& p, const Vec2& v, float a) : pos(p), velocity(v), angle(a) {}
-  CTransform(const Vec2& p, const Vec2& maxp, const Vec2& minp, const Vec2& v, const Vec2& maxv, const Vec2& minv,
-             const Vec2& acc, float step, float a)
-      : pos(p), maxPos(maxp), minPos(minp), velocity(v), maxVel(maxv), minVel(minv), acceleration(acc),
-        accelerationStep(step), angle(a)
+  CTransform(const Vec2& p, const Vec2& v, const Vec2& maxv, const Vec2& minv, const Vec2& acc, float step, float a)
+      : pos(p), velocity(v), maxVel(maxv), minVel(minv), acceleration(acc), accelerationStep(step), angle(a)
   {
   }
 
@@ -56,7 +52,9 @@ class CCollision
 {
 public:
   float radius = 0;
+  bool persist = false;
   CCollision(float r) : radius(r) {}
+  CCollision(float r, bool p) : radius(r), persist(p) {}
 };
 class CScore
 {
