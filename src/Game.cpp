@@ -46,6 +46,7 @@ void Game::run()
         sPlayerBulletSpawner();
         sLifespan();
         sUpdatePlayerAcceleration();
+        sUpdateSpecialBulletsAcceleration();
         sAcceleration();
         sEdges();
         sMovement();
@@ -264,7 +265,7 @@ void Game::spawnSpecialBullet(const Vec2& pos)
   int shapeRadius = m_config.player.special.bulletShapeRadius;
   int collisionRadius = m_config.player.special.bulletCollisionRadius;
   Vec2 velocity(0.0f, 0.0f);
-  Vec2 maxVel(10.0f, 10.0f);
+  Vec2 maxVel(10000.0f, 10000.0f);
   Vec2 minVel(0.0, 0.0);
   Vec2 acceleration(0.0f, 0.0f);
   float step = 0.0f;
@@ -333,6 +334,32 @@ void Game::sUpdatePlayerAcceleration()
     acc.y = -std::copysign(std::min(step, std::abs(m_player->cTransform->velocity.y)), m_player->cTransform->velocity.y);
 
   m_player->cTransform->acceleration = acc;
+}
+
+void Game::sUpdateSpecialBulletsAcceleration()
+{
+  for (auto& b : m_entities.getEntities("bullet"))
+  {
+    if (!b->cCollision->persist) // TODO: this is not right, persist is not meant to identify a bullet as special
+      continue;
+
+    const float speed = 0.1;
+    Vec2 dist(m_player->cTransform->pos.x - b->cTransform->pos.x, m_player->cTransform->pos.y - b->cTransform->pos.y);
+    float centAccMag = speed * speed / dist.length();
+
+    float distMag = sqrt(dist.x * dist.x + dist.y * dist.y);
+    if (distMag != 0.0)
+    {
+      dist.x /= distMag;
+      dist.y /= distMag;
+    }
+
+    // Calculate the centripetal acceleration vector
+    Vec2 centAcc = Vec2(-dist.y, dist.x) * centAccMag;
+
+    b->cTransform->acceleration.x = centAcc.x;
+    b->cTransform->acceleration.y = centAcc.y;
+  }
 }
 
 /** System that adds all accelerated entities current acceleration to their velocities, within boundaries */
